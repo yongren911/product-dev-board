@@ -15,7 +15,7 @@
         <p class="hero-copy">聚焦运动护具项目状态、优先级与下一步行动，帮助产品设计师快速同步开发节奏。</p>
       </div>
       <div class="hero-metric" aria-label="当前项目数量">
-        <span id="visible-count">4</span>
+        <span id="visible-count">5</span>
         <small>进行中项目</small>
       </div>
     </section>
@@ -36,6 +36,7 @@
             <option value="S类">S类</option>
             <option value="A类">A类</option>
             <option value="B类">B类</option>
+            <option value="C类">C类</option>
           </select>
         </label>
         <label class="form-field">
@@ -47,6 +48,7 @@
           <input id="project-next-step" name="nextStep" type="text" placeholder="例如：确认材料与打样节点" required />
         </label>
         <button class="add-button" type="submit">添加项目</button>
+        <button id="reset-projects" class="reset-button" type="button">恢复默认项目</button>
       </form>
     </section>
 
@@ -55,6 +57,7 @@
       <button class="filter-button" type="button" data-filter="S类">S类</button>
       <button class="filter-button" type="button" data-filter="A类">A类</button>
       <button class="filter-button" type="button" data-filter="B类">B类</button>
+      <button class="filter-button" type="button" data-filter="C类">C类</button>
     </section>
 
     <section id="project-grid" class="project-grid" aria-live="polite"></section>
