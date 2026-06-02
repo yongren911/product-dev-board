@@ -62,48 +62,57 @@
     </section>
 
     <section class="add-project-panel" aria-labelledby="add-project-title">
-      <div class="section-heading">
-        <p class="eyebrow">New Sprint Entry</p>
-        <h2 id="add-project-title">新增项目</h2>
-      </div>
       <form id="add-project-form" class="add-project-form">
-        <label class="form-field">
-          <span>项目名称</span>
-          <input id="project-name" name="name" type="text" placeholder="例如：轻量竞速护踝" required />
-        </label>
-        <label class="form-field">
-          <span>优先级</span>
-          <select id="project-priority" name="priority" required>
-            <option value="S类">S类</option>
-            <option value="A类">A类</option>
-            <option value="B类">B类</option>
-            <option value="C类">C类</option>
-          </select>
-        </label>
-        <label class="form-field">
-          <span>当前状态</span>
-          <input id="project-status" name="status" type="text" placeholder="例如：结构方案评审中" required />
-        </label>
-        <label class="form-field">
-          <span>项目状态</span>
-          <select id="project-project-status" name="projectStatus" required>
-            <option value="未开始">未开始</option>
-            <option value="进行中" selected>进行中</option>
-            <option value="待确认">待确认</option>
-            <option value="已完成">已完成</option>
-          </select>
-        </label>
-        <label class="form-field">
-          <span>截止时间</span>
-          <input id="project-deadline" name="deadline" type="date" />
-        </label>
-        <label class="form-field">
-          <span>下一步任务</span>
-          <input id="project-next-step" name="nextStep" type="text" placeholder="例如：确认材料与打样节点" required />
-        </label>
-        <div class="form-actions">
-          <button class="add-button" type="submit">添加项目</button>
-          <button id="reset-projects" class="reset-button" type="button">恢复默认项目</button>
+        <div class="add-project-fields">
+          <div class="add-project-kicker">
+            <p class="eyebrow">New Sprint Entry</p>
+          </div>
+          <div class="add-project-field-grid">
+            <label class="form-field">
+              <span>项目名称</span>
+              <input id="project-name" name="name" type="text" placeholder="例如：轻量竞速护踝" required />
+            </label>
+            <label class="form-field">
+              <span>优先级</span>
+              <select id="project-priority" name="priority" required>
+                <option value="S类">S类</option>
+                <option value="A类">A类</option>
+                <option value="B类">B类</option>
+                <option value="C类">C类</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span>当前状态</span>
+              <input id="project-status" name="status" type="text" placeholder="例如：结构方案评审中" required />
+            </label>
+            <label class="form-field">
+              <span>项目状态</span>
+              <select id="project-project-status" name="projectStatus" required>
+                <option value="未开始">未开始</option>
+                <option value="进行中" selected>进行中</option>
+                <option value="待确认">待确认</option>
+                <option value="已完成">已完成</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span>截止时间</span>
+              <input id="project-deadline" name="deadline" type="date" />
+            </label>
+            <label class="form-field">
+              <span>下一步任务</span>
+              <input id="project-next-step" name="nextStep" type="text" placeholder="例如：确认材料与打样节点" required />
+            </label>
+          </div>
+        </div>
+        <div class="add-project-actions-panel">
+          <div class="section-heading add-project-heading">
+            <p class="eyebrow">Project Intake</p>
+            <h2 id="add-project-title">新增项目</h2>
+          </div>
+          <div class="form-actions">
+            <button class="add-button" type="submit">添加项目</button>
+            <button id="reset-projects" class="reset-button" type="button">恢复默认项目</button>
+          </div>
         </div>
       </form>
     </section>
