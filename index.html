@@ -76,6 +76,7 @@
         <button id="export-word" class="data-transfer-button" type="button">导出 Word 文档</button>
         <button id="export-pdf" class="data-transfer-button" type="button">导出 PDF / 打印</button>
         <button id="export-json" class="data-transfer-button" type="button">导出 JSON 备份</button>
+        <button id="generate-weekly-report" class="data-transfer-button weekly-report-button" type="button">生成周报</button>
         <label class="data-transfer-button import-button" for="import-csv-file">
           导入表格 CSV
           <input id="import-csv-file" type="file" accept=".csv,text/csv" />
@@ -85,6 +86,20 @@
           <input id="import-json-file" type="file" accept="application/json,.json" />
         </label>
       </div>
+    </section>
+
+    <section id="weekly-report-panel" class="weekly-report-panel" aria-labelledby="weekly-report-title" hidden>
+      <div class="section-heading weekly-report-heading">
+        <div>
+          <p class="eyebrow">Weekly Sync</p>
+          <h2 id="weekly-report-title">产品开发周报</h2>
+        </div>
+        <div class="weekly-report-actions">
+          <button id="copy-weekly-report" class="copy-weekly-report-button" type="button">复制周报</button>
+          <span id="weekly-report-copy-status" class="weekly-report-copy-status" aria-live="polite"></span>
+        </div>
+      </div>
+      <textarea id="weekly-report-text" class="weekly-report-text" readonly aria-label="生成的产品开发周报文本"></textarea>
     </section>
 
     <section id="print-report" class="print-report" aria-labelledby="print-report-title"></section>

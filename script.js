@@ -87,6 +87,11 @@ const exportPdfButton = document.querySelector("#export-pdf");
 const exportJsonButton = document.querySelector("#export-json");
 const importCsvFileInput = document.querySelector("#import-csv-file");
 const importJsonFileInput = document.querySelector("#import-json-file");
+const generateWeeklyReportButton = document.querySelector("#generate-weekly-report");
+const weeklyReportPanel = document.querySelector("#weekly-report-panel");
+const weeklyReportText = document.querySelector("#weekly-report-text");
+const copyWeeklyReportButton = document.querySelector("#copy-weekly-report");
+const weeklyReportCopyStatus = document.querySelector("#weekly-report-copy-status");
 const printReport = document.querySelector("#print-report");
 
 let activeFilter = "全部";
@@ -368,6 +373,101 @@ function getReportTableHtml() {
       <tbody>${bodyHtml || `<tr><td colspan="${CSV_HEADERS.length}">暂无项目数据</td></tr>`}</tbody>
     </table>
   `;
+}
+
+
+function getWeeklyReportProjectLine(project, index) {
+  return `${index + 1}. ${project.name}
+   - 优先级：${project.priority}
+   - 当前状态：${project.currentStatus}
+   - 项目状态：${project.projectStatus}
+   - 下一步任务：${project.nextTask}
+   - 截止时间：${getDeadlineText(project.deadline)}`;
+}
+
+function getWeeklyReportSimpleLine(project, index) {
+  return `${index + 1}. ${project.name}（${project.priority} / ${project.projectStatus}）：${project.currentStatus}；下一步：${project.nextTask}；截止时间：${getDeadlineText(project.deadline)}`;
+}
+
+function getWeeklyReportSection(projectList, formatter, emptyText) {
+  if (projectList.length === 0) {
+    return emptyText;
+  }
+
+  return projectList.map(formatter).join("\n");
+}
+
+function getRiskLine(project, index, label, today) {
+  const daysUntilDeadline = getDaysUntilDeadline(project, today);
+  const timingText = daysUntilDeadline === null
+    ? ""
+    : daysUntilDeadline < 0
+      ? `，已逾期 ${Math.abs(daysUntilDeadline)} 天`
+      : `，距离截止 ${daysUntilDeadline} 天`;
+
+  return `${index + 1}. 【${label}】${project.name}（${project.priority} / ${project.projectStatus}）：${project.currentStatus}；下一步：${project.nextTask}；截止时间：${getDeadlineText(project.deadline)}${timingText}`;
+}
+
+function buildWeeklyReportText() {
+  const today = getTodayDateOnly();
+  const keyProjects = projects.filter((project) => ["S类", "A类"].includes(project.priority));
+  const normalProjects = projects.filter((project) => ["B类", "C类"].includes(project.priority));
+  const doneProjects = projects.filter((project) => project.projectStatus === "已完成");
+  const overdueProjects = projects.filter((project) => isProjectOverdue(project, today));
+  const dueSoonProjects = projects.filter((project) => isProjectDueSoon(project, today));
+  const pendingProjects = projects.filter((project) => project.projectStatus === "待确认");
+  const nextWeekTasks = projects.filter((project) => project.projectStatus !== "已完成");
+  const riskItems = [
+    ...overdueProjects.map((project) => ({ project, label: "已逾期" })),
+    ...dueSoonProjects.map((project) => ({ project, label: "即将到期" })),
+    ...pendingProjects.map((project) => ({ project, label: "待确认" })),
+  ];
+
+  // 周报完全基于当前 projects 数组生成；新增、编辑、删除或导入后再次点击会读取最新数据。
+  return `【本周产品开发进度周报】
+生成时间：${getFormattedExportTime()}
+
+一、重点项目进展
+${getWeeklyReportSection(keyProjects, getWeeklyReportProjectLine, "暂无 S类 或 A类 项目。")}
+
+二、普通项目进展
+${getWeeklyReportSection(normalProjects, getWeeklyReportProjectLine, "暂无 B类 或 C类 项目。")}
+
+三、已完成项目
+${getWeeklyReportSection(doneProjects, getWeeklyReportSimpleLine, "暂无已完成项目。")}
+
+四、风险与待确认事项
+${getWeeklyReportSection(riskItems, (item, index) => getRiskLine(item.project, index, item.label, today), "暂无逾期、即将到期或待确认事项。")}
+
+五、下周重点计划
+${getWeeklyReportSection(nextWeekTasks, (project, index) => `${index + 1}. ${project.name}：${project.nextTask}`, "暂无未完成项目的下一步任务。")}`;
+}
+
+function renderWeeklyReport() {
+  weeklyReportText.value = buildWeeklyReportText();
+  weeklyReportPanel.hidden = false;
+  weeklyReportCopyStatus.textContent = "";
+  weeklyReportPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  weeklyReportText.focus();
+}
+
+async function copyWeeklyReport() {
+  if (!weeklyReportText.value) {
+    renderWeeklyReport();
+  }
+
+  try {
+    await navigator.clipboard.writeText(weeklyReportText.value);
+  } catch (error) {
+    // Clipboard API 不可用时使用 textarea 选中复制，保证老浏览器也能一键复制。
+    weeklyReportText.select();
+    document.execCommand("copy");
+  }
+
+  weeklyReportCopyStatus.textContent = "已复制";
+  window.setTimeout(() => {
+    weeklyReportCopyStatus.textContent = "";
+  }, 1800);
 }
 
 function exportWordProjects() {
@@ -777,6 +877,8 @@ exportCsvButton.addEventListener("click", exportCsvProjects);
 exportWordButton.addEventListener("click", exportWordProjects);
 exportPdfButton.addEventListener("click", exportPdfProjects);
 exportJsonButton.addEventListener("click", exportJsonProjects);
+generateWeeklyReportButton.addEventListener("click", renderWeeklyReport);
+copyWeeklyReportButton.addEventListener("click", copyWeeklyReport);
 
 importCsvFileInput.addEventListener("change", (event) => {
   importProjects(event.target.files?.[0], "csv");
