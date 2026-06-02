@@ -204,7 +204,7 @@ h1 {
 
 .add-project-form {
   display: grid;
-  grid-template-columns: 1.25fr 0.68fr repeat(2, minmax(150px, 1fr)) auto;
+  grid-template-columns: minmax(210px, 1.15fr) minmax(120px, 0.55fr) repeat(4, minmax(145px, 1fr)) auto auto;
   gap: 14px;
   align-items: end;
 }
@@ -286,20 +286,66 @@ h1 {
   transform: translateY(-1px);
 }
 
-.toolbar {
+.board-controls {
   position: sticky;
   top: 12px;
   z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
   margin: 28px 0;
   padding: 10px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 28px;
   background: rgba(7, 10, 16, 0.68);
   box-shadow: 0 14px 44px rgba(0, 0, 0, 0.22);
   backdrop-filter: blur(18px);
+}
+
+.search-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(5, 8, 13, 0.58);
+}
+
+.search-field span {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.search-field input {
+  width: 100%;
+  min-height: 44px;
+  color: var(--text);
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.search-field input::placeholder {
+  color: rgba(152, 163, 179, 0.58);
+}
+
+.search-field:focus-within {
+  border-color: rgba(80, 242, 207, 0.42);
+  box-shadow: 0 0 0 4px rgba(80, 242, 207, 0.08);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 .filter-button {
@@ -481,6 +527,13 @@ h1 {
   letter-spacing: -0.04em;
 }
 
+.badge-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .priority-badge {
   flex: 0 0 auto;
   padding: 8px 12px;
@@ -508,6 +561,40 @@ h1 {
   color: #f4f7fb;
   background: rgba(127, 139, 158, 0.72);
   box-shadow: none;
+}
+
+.status-badge {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  color: var(--muted-strong);
+  font-size: 0.78rem;
+  font-weight: 900;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.status-badge.in-progress {
+  color: var(--accent);
+  border-color: rgba(80, 242, 207, 0.28);
+  background: rgba(80, 242, 207, 0.08);
+}
+
+.status-badge.pending {
+  color: var(--warning);
+  border-color: rgba(247, 200, 106, 0.3);
+  background: rgba(247, 200, 106, 0.08);
+}
+
+.status-badge.done {
+  color: var(--success);
+  border-color: rgba(198, 247, 90, 0.3);
+  background: rgba(198, 247, 90, 0.08);
+}
+
+.status-badge.not-started {
+  color: #b8c2d2;
+  border-color: rgba(184, 194, 210, 0.2);
 }
 
 .card-detail {
@@ -557,6 +644,11 @@ h1 {
   font-size: 1rem;
   font-weight: 650;
   line-height: 1.62;
+}
+
+.deadline-value {
+  color: var(--muted-strong);
+  font-variant-numeric: tabular-nums;
 }
 
 .card-footer {
@@ -719,6 +811,17 @@ h1 {
   background: rgba(255, 255, 255, 0.035);
 }
 
+@media (max-width: 1100px) {
+  .add-project-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .add-button,
+  .reset-button {
+    grid-column: span 1;
+  }
+}
+
 @media (max-width: 980px) {
   .add-project-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -727,6 +830,16 @@ h1 {
   .add-button,
   .reset-button {
     grid-column: 1 / -1;
+  }
+
+  .board-controls {
+    position: static;
+    grid-template-columns: 1fr;
+    border-radius: 24px;
+  }
+
+  .toolbar {
+    justify-content: flex-start;
   }
 }
 
@@ -769,11 +882,9 @@ h1 {
   }
 
   .toolbar {
-    position: static;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 6px;
-    border-radius: 22px;
   }
 
   .filter-button {
@@ -804,8 +915,8 @@ h1 {
     justify-content: flex-start;
   }
 
-  .priority-badge {
-    justify-self: start;
+  .badge-stack {
+    justify-content: flex-start;
   }
 }
 
@@ -824,6 +935,17 @@ h1 {
 
   .toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .search-field {
+    grid-template-columns: 1fr;
+    gap: 2px;
+    padding: 10px 14px;
+    border-radius: 18px;
+  }
+
+  .search-field input {
+    min-height: 36px;
   }
 
   .detail-item {

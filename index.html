@@ -44,6 +44,19 @@
           <input id="project-status" name="status" type="text" placeholder="例如：结构方案评审中" required />
         </label>
         <label class="form-field">
+          <span>项目状态</span>
+          <select id="project-project-status" name="projectStatus" required>
+            <option value="未开始">未开始</option>
+            <option value="进行中" selected>进行中</option>
+            <option value="待确认">待确认</option>
+            <option value="已完成">已完成</option>
+          </select>
+        </label>
+        <label class="form-field">
+          <span>截止时间</span>
+          <input id="project-deadline" name="deadline" type="date" />
+        </label>
+        <label class="form-field">
           <span>下一步任务</span>
           <input id="project-next-step" name="nextStep" type="text" placeholder="例如：确认材料与打样节点" required />
         </label>
@@ -52,12 +65,18 @@
       </form>
     </section>
 
-    <section class="toolbar" aria-label="按优先级筛选项目">
-      <button class="filter-button active" type="button" data-filter="全部">全部</button>
-      <button class="filter-button" type="button" data-filter="S类">S类</button>
-      <button class="filter-button" type="button" data-filter="A类">A类</button>
-      <button class="filter-button" type="button" data-filter="B类">B类</button>
-      <button class="filter-button" type="button" data-filter="C类">C类</button>
+    <section class="board-controls" aria-label="项目搜索和优先级筛选">
+      <label class="search-field" for="project-search">
+        <span>Search</span>
+        <input id="project-search" type="search" placeholder="搜索项目名称、当前状态或下一步任务" autocomplete="off" />
+      </label>
+      <div class="toolbar" aria-label="按优先级筛选项目">
+        <button class="filter-button active" type="button" data-filter="全部">全部</button>
+        <button class="filter-button" type="button" data-filter="S类">S类</button>
+        <button class="filter-button" type="button" data-filter="A类">A类</button>
+        <button class="filter-button" type="button" data-filter="B类">B类</button>
+        <button class="filter-button" type="button" data-filter="C类">C类</button>
+      </div>
     </section>
 
     <section id="project-grid" class="project-grid" aria-live="polite"></section>
@@ -89,6 +108,19 @@
       <label class="form-field">
         <span>当前状态</span>
         <input id="edit-project-status" name="status" type="text" required />
+      </label>
+      <label class="form-field">
+        <span>项目状态</span>
+        <select id="edit-project-project-status" name="projectStatus" required>
+          <option value="未开始">未开始</option>
+          <option value="进行中">进行中</option>
+          <option value="待确认">待确认</option>
+          <option value="已完成">已完成</option>
+        </select>
+      </label>
+      <label class="form-field">
+        <span>截止时间</span>
+        <input id="edit-project-deadline" name="deadline" type="date" />
       </label>
       <label class="form-field">
         <span>下一步任务</span>
