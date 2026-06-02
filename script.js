@@ -4,7 +4,6 @@ const PRIORITY_OPTIONS = ["S类", "A类", "B类", "C类"];
 const PROJECT_STATUS_OPTIONS = ["未开始", "进行中", "待确认", "已完成"];
 const CSV_FILE_NAME = "product-projects.csv";
 const WORD_FILE_NAME = "product-projects-report.doc";
-const BACKUP_FILE_NAME = "product-projects-backup.json";
 const CSV_HEADERS = ["项目名称", "优先级", "当前状态", "项目状态", "截止时间", "下一步任务"];
 const CSV_HEADER_TO_PROJECT_KEY = {
   "项目名称": "name",
@@ -84,19 +83,21 @@ const completionBar = document.querySelector("#completion-bar");
 const exportCsvButton = document.querySelector("#export-csv");
 const exportWordButton = document.querySelector("#export-word");
 const exportPdfButton = document.querySelector("#export-pdf");
-const exportJsonButton = document.querySelector("#export-json");
 const importCsvFileInput = document.querySelector("#import-csv-file");
-const importJsonFileInput = document.querySelector("#import-json-file");
+const overviewContent = document.querySelector("#overview-content");
+const toggleOverviewButton = document.querySelector("#toggle-overview");
 const generateWeeklyReportButton = document.querySelector("#generate-weekly-report");
 const weeklyReportPanel = document.querySelector("#weekly-report-panel");
 const weeklyReportText = document.querySelector("#weekly-report-text");
 const copyWeeklyReportButton = document.querySelector("#copy-weekly-report");
+const closeWeeklyReportButton = document.querySelector("#close-weekly-report");
 const weeklyReportCopyStatus = document.querySelector("#weekly-report-copy-status");
 const printReport = document.querySelector("#print-report");
 
 let activeFilter = "全部";
 let searchKeyword = "";
 let projects = loadProjects();
+let isOverviewCollapsed = false;
 
 function getPriorityClass(priority) {
   return priority.replace("类", "").toLowerCase();
@@ -179,7 +180,7 @@ function getProjectStats() {
 function renderOverview() {
   const stats = getProjectStats();
 
-  // 数据总览始终基于完整项目列表计算，不受搜索和筛选影响
+  // 数据总览始终基于完整项目列表计算，不受搜索和筛选影响。
   statTotal.textContent = stats.total;
   statS.textContent = stats.s;
   statA.textContent = stats.a;
@@ -188,6 +189,18 @@ function renderOverview() {
   statOverdue.textContent = stats.overdue;
   completionLabel.textContent = `完成进度 ${stats.completion}%`;
   completionBar.style.setProperty("--completion", `${stats.completion}%`);
+}
+
+function renderOverviewCollapseState() {
+  // 折叠只控制内容区显隐，不改变统计数据本身。
+  overviewContent.hidden = isOverviewCollapsed;
+  toggleOverviewButton.textContent = isOverviewCollapsed ? "展开" : "折叠";
+  toggleOverviewButton.setAttribute("aria-expanded", String(!isOverviewCollapsed));
+}
+
+function toggleOverviewCollapse() {
+  isOverviewCollapsed = !isOverviewCollapsed;
+  renderOverviewCollapseState();
 }
 
 function getPriorityProgress(priority) {
@@ -451,6 +464,12 @@ function renderWeeklyReport() {
   weeklyReportText.focus();
 }
 
+function closeWeeklyReport() {
+  // 关闭后只隐藏周报内容，保留已生成文本，便于再次生成时覆盖并重新显示。
+  weeklyReportPanel.hidden = true;
+  weeklyReportCopyStatus.textContent = "";
+}
+
 async function copyWeeklyReport() {
   if (!weeklyReportText.value) {
     renderWeeklyReport();
@@ -502,11 +521,6 @@ function exportWordProjects() {
   `;
 
   downloadBlob(["\uFEFF", html], WORD_FILE_NAME, "application/msword;charset=utf-8");
-}
-
-function exportJsonProjects() {
-  const backupContent = JSON.stringify(getExportProjects(), null, 2);
-  downloadBlob([backupContent], BACKUP_FILE_NAME, "application/json;charset=utf-8");
 }
 
 function renderPrintReport() {
@@ -640,17 +654,13 @@ function applyImportedProjects(importedProjects) {
   renderProjects();
 }
 
-function importProjects(file, importType) {
+function importProjects(file) {
   if (!file) {
     return;
   }
 
-  if (!window.confirm("导入数据会覆盖当前项目列表，是否继续？")) {
-    if (importType === "csv") {
-      importCsvFileInput.value = "";
-    } else {
-      importJsonFileInput.value = "";
-    }
+  if (!window.confirm("导入 CSV 会覆盖当前项目列表，是否继续？")) {
+    importCsvFileInput.value = "";
     return;
   }
 
@@ -659,12 +669,10 @@ function importProjects(file, importType) {
   reader.addEventListener("load", () => {
     try {
       const fileContent = String(reader.result || "");
-      const importedProjects = importType === "csv"
-        ? parseCsvProjects(fileContent)
-        : normalizeProjectList(JSON.parse(fileContent));
+      const importedProjects = parseCsvProjects(fileContent);
 
       if (!importedProjects) {
-        window.alert(importType === "csv" ? "CSV 格式错误，请检查表头和数据内容" : "JSON 格式错误，请检查备份文件内容");
+        window.alert("CSV 格式错误，请检查表头和数据内容");
         return;
       }
 
@@ -672,23 +680,15 @@ function importProjects(file, importType) {
       window.alert("数据导入成功");
     } catch (error) {
       console.warn("导入项目数据失败。", error);
-      window.alert(importType === "csv" ? "CSV 格式错误，请检查表头和数据内容" : "JSON 格式错误，请检查备份文件内容");
+      window.alert("CSV 格式错误，请检查表头和数据内容");
     } finally {
-      if (importType === "csv") {
-        importCsvFileInput.value = "";
-      } else {
-        importJsonFileInput.value = "";
-      }
+      importCsvFileInput.value = "";
     }
   });
 
   reader.addEventListener("error", () => {
-    window.alert(importType === "csv" ? "CSV 格式错误，请检查表头和数据内容" : "JSON 格式错误，请检查备份文件内容");
-    if (importType === "csv") {
-      importCsvFileInput.value = "";
-    } else {
-      importJsonFileInput.value = "";
-    }
+    window.alert("CSV 格式错误，请检查表头和数据内容");
+    importCsvFileInput.value = "";
   });
 
   reader.readAsText(file);
@@ -876,16 +876,13 @@ function renderProjects(filter = activeFilter) {
 exportCsvButton.addEventListener("click", exportCsvProjects);
 exportWordButton.addEventListener("click", exportWordProjects);
 exportPdfButton.addEventListener("click", exportPdfProjects);
-exportJsonButton.addEventListener("click", exportJsonProjects);
+toggleOverviewButton.addEventListener("click", toggleOverviewCollapse);
 generateWeeklyReportButton.addEventListener("click", renderWeeklyReport);
 copyWeeklyReportButton.addEventListener("click", copyWeeklyReport);
+closeWeeklyReportButton.addEventListener("click", closeWeeklyReport);
 
 importCsvFileInput.addEventListener("change", (event) => {
-  importProjects(event.target.files?.[0], "csv");
-});
-
-importJsonFileInput.addEventListener("change", (event) => {
-  importProjects(event.target.files?.[0], "json");
+  importProjects(event.target.files?.[0]);
 });
 
 filterButtons.forEach((button) => {
@@ -1018,4 +1015,5 @@ resetProjectsButton.addEventListener("click", () => {
   renderProjects();
 });
 
+renderOverviewCollapseState();
 renderProjects();
