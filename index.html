@@ -26,10 +26,19 @@
           <p class="eyebrow">Data Overview</p>
           <h2 id="overview-title">数据总览</h2>
         </div>
-        <div class="completion-summary" aria-label="整体完成进度">
-          <span id="completion-label">完成进度 0%</span>
-          <div class="completion-track" aria-hidden="true">
-            <span id="completion-bar" style="--completion: 0%"></span>
+        <div class="overview-side-actions">
+          <div class="completion-summary" aria-label="整体完成进度">
+            <span id="completion-label">完成进度 0%</span>
+            <div class="completion-track" aria-hidden="true">
+              <span id="completion-bar" style="--completion: 0%"></span>
+            </div>
+          </div>
+          <div class="data-transfer-actions" aria-label="项目数据导出和导入">
+            <button id="export-projects" class="data-transfer-button export-button" type="button">导出数据</button>
+            <label class="data-transfer-button import-button" for="import-projects-file">
+              导入数据
+              <input id="import-projects-file" type="file" accept="application/json,.json" />
+            </label>
           </div>
         </div>
       </div>

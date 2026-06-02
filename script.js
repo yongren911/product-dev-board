@@ -1,6 +1,7 @@
 const STORAGE_KEY = "product-dev-board-projects";
 const PRIORITY_OPTIONS = ["S类", "A类", "B类", "C类"];
 const PROJECT_STATUS_OPTIONS = ["未开始", "进行中", "待确认", "已完成"];
+const BACKUP_FILE_NAME = "product-projects-backup.json";
 
 // 默认项目数据：localStorage 没有数据时使用
 const defaultProjects = [
@@ -63,6 +64,8 @@ const statDone = document.querySelector("#stat-done");
 const statOverdue = document.querySelector("#stat-overdue");
 const completionLabel = document.querySelector("#completion-label");
 const completionBar = document.querySelector("#completion-bar");
+const exportProjectsButton = document.querySelector("#export-projects");
+const importProjectsFileInput = document.querySelector("#import-projects-file");
 
 let activeFilter = "全部";
 let searchKeyword = "";
@@ -218,6 +221,93 @@ function isValidProject(project) {
   return Boolean(normalizeProject(project));
 }
 
+function normalizeProjectList(projectList) {
+  if (!Array.isArray(projectList)) {
+    return null;
+  }
+
+  const normalizedProjects = projectList.map(normalizeProject);
+
+  // 导入文件必须每一项都是有效项目，避免半截数据覆盖当前看板
+  if (normalizedProjects.some((project) => !project)) {
+    return null;
+  }
+
+  return normalizedProjects;
+}
+
+function getExportProjects() {
+  // 导出字段与 localStorage 保存结构保持一致，便于后续直接恢复
+  return projects.map((project) => ({
+    name: project.name,
+    priority: project.priority,
+    status: project.status,
+    projectStatus: project.projectStatus,
+    deadline: project.deadline,
+    nextStep: project.nextStep,
+  }));
+}
+
+function exportProjects() {
+  const backupContent = JSON.stringify(getExportProjects(), null, 2);
+  const backupBlob = new Blob([backupContent], { type: "application/json;charset=utf-8" });
+  const downloadUrl = URL.createObjectURL(backupBlob);
+  const downloadLink = document.createElement("a");
+
+  downloadLink.href = downloadUrl;
+  downloadLink.download = BACKUP_FILE_NAME;
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  downloadLink.remove();
+  URL.revokeObjectURL(downloadUrl);
+}
+
+function importProjects(file) {
+  if (!file) {
+    return;
+  }
+
+  if (!window.confirm("导入数据会覆盖当前项目列表，确认继续吗？")) {
+    importProjectsFileInput.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.addEventListener("load", () => {
+    try {
+      const parsedProjects = JSON.parse(String(reader.result || ""));
+      const importedProjects = normalizeProjectList(parsedProjects);
+
+      if (!importedProjects) {
+        window.alert("导入的文件格式不正确");
+        return;
+      }
+
+      // 导入成功后立即刷新页面状态并写入 localStorage，确保刷新后仍保留
+      projects = importedProjects;
+      saveProjects();
+      setActiveFilter("全部");
+      searchKeyword = "";
+      projectSearchInput.value = "";
+      renderProjects();
+      window.alert("数据导入成功");
+    } catch (error) {
+      console.warn("导入项目数据失败。", error);
+      window.alert("文件格式错误");
+    } finally {
+      importProjectsFileInput.value = "";
+    }
+  });
+
+  reader.addEventListener("error", () => {
+    window.alert("文件格式错误");
+    importProjectsFileInput.value = "";
+  });
+
+  reader.readAsText(file);
+}
+
 function loadProjects() {
   const savedProjects = localStorage.getItem(STORAGE_KEY);
 
@@ -363,6 +453,12 @@ function renderProjects(filter = activeFilter) {
     `;
   }).join("");
 }
+
+exportProjectsButton.addEventListener("click", exportProjects);
+
+importProjectsFileInput.addEventListener("change", (event) => {
+  importProjects(event.target.files?.[0]);
+});
 
 filterButtons.forEach((button) => {
   button.addEventListener("click", () => {

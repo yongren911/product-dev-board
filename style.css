@@ -191,9 +191,15 @@ h1 {
   align-items: center;
 }
 
+.overview-side-actions {
+  display: grid;
+  width: min(420px, 100%);
+  gap: 14px;
+}
+
 .completion-summary {
   display: grid;
-  min-width: min(360px, 100%);
+  min-width: 0;
   gap: 10px;
   padding: 16px;
   border: 1px solid rgba(80, 242, 207, 0.16);
@@ -223,6 +229,61 @@ h1 {
   background: linear-gradient(90deg, var(--accent), var(--success));
   box-shadow: 0 0 24px rgba(80, 242, 207, 0.28);
   transition: width 0.28s ease;
+}
+
+.data-transfer-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.data-transfer-button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  border: 1px solid rgba(80, 242, 207, 0.22);
+  border-radius: 999px;
+  background: rgba(80, 242, 207, 0.075);
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.data-transfer-button:hover {
+  border-color: rgba(80, 242, 207, 0.48);
+  background: rgba(80, 242, 207, 0.12);
+  box-shadow: 0 12px 30px rgba(80, 242, 207, 0.12);
+  transform: translateY(-1px);
+}
+
+.export-button {
+  color: #03110f;
+  border: 0;
+  background: linear-gradient(135deg, var(--accent), var(--success));
+}
+
+.import-button {
+  position: relative;
+}
+
+.import-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .overview-grid {
@@ -1151,9 +1212,13 @@ h1 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .overview-side-actions {
+    width: 100%;
+    margin-top: 16px;
+  }
+
   .completion-summary {
     min-width: 100%;
-    margin-top: 16px;
   }
 
 
@@ -1239,7 +1304,8 @@ h1 {
     font-size: 0.92rem;
   }
 
-  .toolbar {
+  .toolbar,
+  .data-transfer-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
