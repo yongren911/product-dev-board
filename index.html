@@ -16,7 +16,48 @@
       </div>
       <div class="hero-metric" aria-label="当前项目数量">
         <span id="visible-count">5</span>
-        <small>进行中项目</small>
+        <small>当前显示</small>
+      </div>
+    </section>
+
+    <section class="overview-panel" aria-labelledby="overview-title">
+      <div class="section-heading overview-heading">
+        <div>
+          <p class="eyebrow">Data Overview</p>
+          <h2 id="overview-title">数据总览</h2>
+        </div>
+        <div class="completion-summary" aria-label="整体完成进度">
+          <span id="completion-label">完成进度 0%</span>
+          <div class="completion-track" aria-hidden="true">
+            <span id="completion-bar" style="--completion: 0%"></span>
+          </div>
+        </div>
+      </div>
+      <div class="overview-grid">
+        <article class="overview-card">
+          <span class="overview-label">项目总数</span>
+          <strong id="stat-total">0</strong>
+        </article>
+        <article class="overview-card highlight-s">
+          <span class="overview-label">S类项目</span>
+          <strong id="stat-s">0</strong>
+        </article>
+        <article class="overview-card highlight-a">
+          <span class="overview-label">A类项目</span>
+          <strong id="stat-a">0</strong>
+        </article>
+        <article class="overview-card">
+          <span class="overview-label">进行中项目</span>
+          <strong id="stat-progressing">0</strong>
+        </article>
+        <article class="overview-card highlight-done">
+          <span class="overview-label">已完成项目</span>
+          <strong id="stat-done">0</strong>
+        </article>
+        <article class="overview-card highlight-overdue">
+          <span class="overview-label">逾期项目</span>
+          <strong id="stat-overdue">0</strong>
+        </article>
       </div>
     </section>
 

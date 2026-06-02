@@ -55,6 +55,14 @@ const projectSearchInput = document.querySelector("#project-search");
 const editProjectDialog = document.querySelector("#edit-project-dialog");
 const editProjectForm = document.querySelector("#edit-project-form");
 const editCancelButtons = document.querySelectorAll("[data-edit-cancel]");
+const statTotal = document.querySelector("#stat-total");
+const statS = document.querySelector("#stat-s");
+const statA = document.querySelector("#stat-a");
+const statProgressing = document.querySelector("#stat-progressing");
+const statDone = document.querySelector("#stat-done");
+const statOverdue = document.querySelector("#stat-overdue");
+const completionLabel = document.querySelector("#completion-label");
+const completionBar = document.querySelector("#completion-bar");
 
 let activeFilter = "全部";
 let searchKeyword = "";
@@ -75,6 +83,81 @@ function getProjectStatusClass(projectStatus) {
 
 function getDeadlineText(deadline) {
   return deadline || "未设置";
+}
+
+function getTodayDateOnly() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+}
+
+function parseDeadlineDate(deadline) {
+  if (!deadline) {
+    return null;
+  }
+
+  const [year, month, day] = deadline.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day);
+}
+
+function getDaysUntilDeadline(project, today = getTodayDateOnly()) {
+  const deadlineDate = parseDeadlineDate(project.deadline);
+
+  if (!deadlineDate || project.projectStatus === "已完成") {
+    return null;
+  }
+
+  const millisecondsPerDay = 1000 * 60 * 60 * 24;
+  return Math.round((deadlineDate - today) / millisecondsPerDay);
+}
+
+function isProjectOverdue(project, today = getTodayDateOnly()) {
+  const daysUntilDeadline = getDaysUntilDeadline(project, today);
+
+  // 非已完成且截止时间早于今天，判定为逾期
+  return daysUntilDeadline !== null && daysUntilDeadline < 0;
+}
+
+function isProjectDueSoon(project, today = getTodayDateOnly()) {
+  const daysUntilDeadline = getDaysUntilDeadline(project, today);
+
+  // 非已完成、未逾期且距离截止小于等于 3 天，判定为即将到期
+  return daysUntilDeadline !== null && daysUntilDeadline >= 0 && daysUntilDeadline <= 3;
+}
+
+function getProjectStats() {
+  const today = getTodayDateOnly();
+  const total = projects.length;
+  const done = projects.filter((project) => project.projectStatus === "已完成").length;
+
+  return {
+    total,
+    s: projects.filter((project) => project.priority === "S类").length,
+    a: projects.filter((project) => project.priority === "A类").length,
+    progressing: projects.filter((project) => project.projectStatus === "进行中").length,
+    done,
+    overdue: projects.filter((project) => isProjectOverdue(project, today)).length,
+    completion: total === 0 ? 0 : Math.round((done / total) * 100),
+  };
+}
+
+function renderOverview() {
+  const stats = getProjectStats();
+
+  // 数据总览始终基于完整项目列表计算，不受搜索和筛选影响
+  statTotal.textContent = stats.total;
+  statS.textContent = stats.s;
+  statA.textContent = stats.a;
+  statProgressing.textContent = stats.progressing;
+  statDone.textContent = stats.done;
+  statOverdue.textContent = stats.overdue;
+  completionLabel.textContent = `完成进度 ${stats.completion}%`;
+  completionBar.style.setProperty("--completion", `${stats.completion}%`);
 }
 
 function getPriorityProgress(priority) {
@@ -213,6 +296,7 @@ function openEditDialog(projectIndex) {
 
 // 根据优先级筛选和搜索关键词共同渲染项目卡片
 function renderProjects(filter = activeFilter) {
+  renderOverview();
   const visibleProjects = projects.filter((project) => {
     const isMatchedByFilter = filter === "全部" || project.priority === filter;
     return isMatchedByFilter && isProjectMatchedBySearch(project);
@@ -229,9 +313,17 @@ function renderProjects(filter = activeFilter) {
     const originalIndex = projects.indexOf(project);
     const priorityClass = getPriorityClass(project.priority);
     const projectStatusClass = getProjectStatusClass(project.projectStatus);
+    const isOverdue = isProjectOverdue(project);
+    const isDueSoon = isProjectDueSoon(project);
+    const timingBadge = isOverdue
+      ? '<span class="timing-badge overdue">已逾期</span>'
+      : isDueSoon
+        ? '<span class="timing-badge due-soon">即将到期</span>'
+        : '';
+    const cardStateClass = isOverdue ? "is-overdue" : isDueSoon ? "is-due-soon" : "";
 
     return `
-      <article class="project-card priority-${priorityClass}" data-project-index="${originalIndex}">
+      <article class="project-card priority-${priorityClass} ${cardStateClass}" data-project-index="${originalIndex}">
         <div class="card-top">
           <div class="card-title-group">
             <span class="project-code">Dev Sprint / ${priorityClass.toUpperCase()}-Guard</span>
@@ -241,6 +333,7 @@ function renderProjects(filter = activeFilter) {
             <div class="badge-stack">
               <span class="priority-badge ${priorityClass}">${project.priority}</span>
               <span class="status-badge ${projectStatusClass}">${escapeHTML(project.projectStatus)}</span>
+              ${timingBadge}
             </div>
             <div class="card-action-buttons">
               <button class="edit-button" type="button" data-edit-index="${originalIndex}" aria-label="编辑 ${escapeHTML(project.name)}">编辑</button>
