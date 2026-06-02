@@ -251,7 +251,8 @@ h1 {
   cursor: pointer;
 }
 
-.add-button {
+.add-button,
+.reset-button {
   min-height: 48px;
   padding: 0 20px;
   color: #03110f;
@@ -265,9 +266,23 @@ h1 {
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
+.reset-button {
+  color: var(--muted-strong);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.055);
+  box-shadow: none;
+}
+
 .add-button:hover {
   box-shadow: 0 20px 48px rgba(80, 242, 207, 0.3);
   filter: saturate(1.08);
+  transform: translateY(-1px);
+}
+
+.reset-button:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.09);
   transform: translateY(-1px);
 }
 
@@ -380,6 +395,19 @@ h1 {
   background: #d7e2f7;
 }
 
+.project-card.priority-c {
+  opacity: 0.9;
+}
+
+.project-card.priority-c::before {
+  background: #7f8b9e;
+  opacity: 0.54;
+}
+
+.project-card.priority-c::after {
+  background: radial-gradient(circle, rgba(127, 139, 158, 0.11), transparent 68%);
+}
+
 .card-top {
   position: relative;
   z-index: 1;
@@ -387,6 +415,34 @@ h1 {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 16px;
   align-items: flex-start;
+}
+
+.card-actions {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
+.delete-button {
+  padding: 5px 10px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.delete-button:hover {
+  color: #ffd5d5;
+  border-color: rgba(255, 123, 123, 0.36);
+  background: rgba(255, 123, 123, 0.08);
+  transform: translateY(-1px);
 }
 
 .card-title-group {
@@ -430,6 +486,12 @@ h1 {
 .priority-badge.b {
   color: #101722;
   background: #d7e2f7;
+  box-shadow: none;
+}
+
+.priority-badge.c {
+  color: #f4f7fb;
+  background: rgba(127, 139, 158, 0.72);
   box-shadow: none;
 }
 
@@ -522,6 +584,10 @@ h1 {
   background: linear-gradient(90deg, #d7e2f7, #ffffff);
 }
 
+.project-card.priority-c .progress-track span {
+  background: linear-gradient(90deg, #7f8b9e, #b1bdcd);
+}
+
 .empty-state {
   grid-column: 1 / -1;
   padding: 42px;
@@ -537,7 +603,8 @@ h1 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .add-button {
+  .add-button,
+  .reset-button {
     grid-column: 1 / -1;
   }
 }
@@ -575,14 +642,15 @@ h1 {
     grid-template-columns: 1fr;
   }
 
-  .add-button {
+  .add-button,
+  .reset-button {
     width: 100%;
   }
 
   .toolbar {
     position: static;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 6px;
     border-radius: 22px;
   }
@@ -605,6 +673,10 @@ h1 {
   .card-top {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  .card-actions {
+    justify-items: start;
   }
 
   .priority-badge {

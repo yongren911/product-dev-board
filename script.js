@@ -1,5 +1,8 @@
-// 默认项目数据，后续可在这里继续扩展字段
-const projects = [
+const STORAGE_KEY = "product-dev-board-projects";
+const PRIORITY_OPTIONS = ["S类", "A类", "B类", "C类"];
+
+// 默认项目数据：localStorage 没有数据时使用
+const defaultProjects = [
   {
     name: "BSR 空气甲护膝 26款",
     priority: "S类",
@@ -24,25 +27,33 @@ const projects = [
     status: "等待样品确认",
     nextStep: "确认样品外观",
   },
+  {
+    name: "SE-S 支撑护膝",
+    priority: "C类",
+    status: "样品待确认",
+    nextStep: "记录测试反馈",
+  },
 ];
 
 const projectGrid = document.querySelector("#project-grid");
 const filterButtons = document.querySelectorAll(".filter-button");
 const visibleCount = document.querySelector("#visible-count");
 const addProjectForm = document.querySelector("#add-project-form");
+const resetProjectsButton = document.querySelector("#reset-projects");
 
 let activeFilter = "全部";
+let projects = loadProjects();
 
 function getPriorityClass(priority) {
   return priority.replace("类", "").toLowerCase();
 }
 
-
 function getPriorityProgress(priority) {
   const priorityProgress = {
-    "S类": "82%",
-    "A类": "64%",
-    "B类": "46%",
+    "S类": "86%",
+    "A类": "66%",
+    "B类": "48%",
+    "C类": "30%",
   };
 
   return priorityProgress[priority] || "56%";
@@ -60,6 +71,43 @@ function escapeHTML(value) {
 
 function getTrimmedValue(formData, key) {
   return String(formData.get(key) || "").trim();
+}
+
+function createDefaultProjects() {
+  return defaultProjects.map((project) => ({ ...project }));
+}
+
+function isValidProject(project) {
+  return project
+    && typeof project.name === "string"
+    && PRIORITY_OPTIONS.includes(project.priority)
+    && typeof project.status === "string"
+    && typeof project.nextStep === "string";
+}
+
+function loadProjects() {
+  const savedProjects = localStorage.getItem(STORAGE_KEY);
+
+  if (!savedProjects) {
+    return createDefaultProjects();
+  }
+
+  try {
+    const parsedProjects = JSON.parse(savedProjects);
+
+    if (Array.isArray(parsedProjects)) {
+      return parsedProjects.filter(isValidProject);
+    }
+  } catch (error) {
+    console.warn("读取项目数据失败，已恢复默认项目。", error);
+  }
+
+  return createDefaultProjects();
+}
+
+// 保存完整项目列表，确保新增和删除刷新后仍然保留
+function saveProjects() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
 }
 
 function setActiveFilter(filter) {
@@ -83,31 +131,39 @@ function renderProjects(filter = activeFilter) {
     return;
   }
 
-  projectGrid.innerHTML = visibleProjects.map((project) => `
-    <article class="project-card priority-${getPriorityClass(project.priority)}">
-      <div class="card-top">
-        <div class="card-title-group">
-          <span class="project-code">Dev Sprint / ${getPriorityClass(project.priority).toUpperCase()}-Guard</span>
-          <h2>${escapeHTML(project.name)}</h2>
+  projectGrid.innerHTML = visibleProjects.map((project) => {
+    const originalIndex = projects.indexOf(project);
+    const priorityClass = getPriorityClass(project.priority);
+
+    return `
+      <article class="project-card priority-${priorityClass}" data-project-index="${originalIndex}">
+        <div class="card-top">
+          <div class="card-title-group">
+            <span class="project-code">Dev Sprint / ${priorityClass.toUpperCase()}-Guard</span>
+            <h2>${escapeHTML(project.name)}</h2>
+          </div>
+          <div class="card-actions">
+            <span class="priority-badge ${priorityClass}">${project.priority}</span>
+            <button class="delete-button" type="button" data-delete-index="${originalIndex}" aria-label="删除 ${escapeHTML(project.name)}">删除</button>
+          </div>
         </div>
-        <span class="priority-badge ${getPriorityClass(project.priority)}">${project.priority}</span>
-      </div>
-      <div class="card-detail">
-        <div class="detail-item">
-          <span class="detail-label">当前状态</span>
-          <p class="detail-value">${escapeHTML(project.status)}</p>
+        <div class="card-detail">
+          <div class="detail-item">
+            <span class="detail-label">当前状态</span>
+            <p class="detail-value">${escapeHTML(project.status)}</p>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">下一步任务</span>
+            <p class="detail-value">${escapeHTML(project.nextStep)}</p>
+          </div>
         </div>
-        <div class="detail-item">
-          <span class="detail-label">下一步任务</span>
-          <p class="detail-value">${escapeHTML(project.nextStep)}</p>
+        <div class="card-footer" aria-hidden="true">
+          <span>Impact Readiness</span>
+          <div class="progress-track"><span style="--progress: ${getPriorityProgress(project.priority)}"></span></div>
         </div>
-      </div>
-      <div class="card-footer" aria-hidden="true">
-        <span>Impact Readiness</span>
-        <div class="progress-track"><span style="--progress: ${getPriorityProgress(project.priority)}"></span></div>
-      </div>
-    </article>
-  `).join("");
+      </article>
+    `;
+  }).join("");
 }
 
 filterButtons.forEach((button) => {
@@ -133,8 +189,41 @@ addProjectForm.addEventListener("submit", (event) => {
   }
 
   projects.unshift(newProject);
+  saveProjects();
   addProjectForm.reset();
   setActiveFilter(newProject.priority);
+  renderProjects();
+});
+
+// 使用事件委托处理删除按钮，删除后立即保存到 localStorage
+projectGrid.addEventListener("click", (event) => {
+  const deleteButton = event.target.closest(".delete-button");
+
+  if (!deleteButton) {
+    return;
+  }
+
+  const projectIndex = Number(deleteButton.dataset.deleteIndex);
+  const project = projects[projectIndex];
+
+  if (!project || !window.confirm(`确认删除「${project.name}」吗？`)) {
+    return;
+  }
+
+  projects.splice(projectIndex, 1);
+  saveProjects();
+  renderProjects();
+});
+
+resetProjectsButton.addEventListener("click", () => {
+  if (!window.confirm("确认恢复默认项目吗？这会清除你新增或删除后的项目列表。")) {
+    return;
+  }
+
+  // 清空本地保存并回到默认列表
+  localStorage.removeItem(STORAGE_KEY);
+  projects = createDefaultProjects();
+  setActiveFilter("全部");
   renderProjects();
 });
 
