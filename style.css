@@ -1509,6 +1509,17 @@ h1 {
     color: #4b5563;
   }
 
+  .weekly-print-body {
+    padding: 16px 18px;
+    color: #111827;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background: #ffffff;
+    font-size: 11pt;
+    line-height: 1.7;
+    break-inside: auto;
+  }
+
   .report-overview {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
@@ -1604,18 +1615,23 @@ h1 {
 
 .weekly-report-actions {
   display: flex;
+  flex: 1 1 340px;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   justify-content: flex-end;
+  min-width: 0;
 }
 
-.copy-weekly-report-button {
+.weekly-report-action-button {
+  flex: 1 1 142px;
+  min-width: 0;
   min-height: 44px;
-  padding: 0 20px;
+  padding: 0 18px;
   color: #03110f;
   font-weight: 900;
-  white-space: nowrap;
+  line-height: 1.2;
+  white-space: normal;
   cursor: pointer;
   border: 0;
   border-radius: 999px;
@@ -1624,13 +1640,14 @@ h1 {
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
-.copy-weekly-report-button:hover {
+.weekly-report-action-button:hover {
   box-shadow: 0 20px 48px rgba(80, 242, 207, 0.28);
   filter: saturate(1.08);
   transform: translateY(-1px);
 }
 
 .weekly-report-copy-status {
+  flex: 0 0 auto;
   min-width: 52px;
   color: var(--success);
   font-size: 0.84rem;
@@ -1789,6 +1806,7 @@ h1 {
 }
 
 .close-weekly-report-button {
+  flex: 0 0 44px;
   width: 44px;
   min-width: 44px;
   padding: 0;
@@ -1808,5 +1826,14 @@ h1 {
 
   .weekly-report-content-header {
     display: grid;
+  }
+
+  .weekly-report-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .weekly-report-action-button {
+    flex-basis: min(100%, 170px);
   }
 }
