@@ -12,6 +12,7 @@
   --accent: #50f2cf;
   --accent-blue: #78a8ff;
   --warning: #f7c86a;
+  --danger: #ff7b7b;
   --success: #c6f75a;
   --shadow: 0 28px 90px rgba(0, 0, 0, 0.42);
   --radius-xl: 30px;
@@ -170,6 +171,132 @@ h1 {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+
+.overview-panel {
+  margin: 24px 0 0;
+  padding: 24px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025)),
+    rgba(8, 13, 22, 0.78);
+  box-shadow: 0 18px 58px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(20px);
+}
+
+.overview-heading {
+  align-items: center;
+}
+
+.completion-summary {
+  display: grid;
+  min-width: min(360px, 100%);
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(80, 242, 207, 0.16);
+  border-radius: 20px;
+  background: rgba(5, 8, 13, 0.48);
+}
+
+.completion-summary span {
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.completion-track {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.completion-track span {
+  display: block;
+  width: var(--completion, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--success));
+  box-shadow: 0 0 24px rgba(80, 242, 207, 0.28);
+  transition: width 0.28s ease;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.overview-card {
+  position: relative;
+  min-height: 112px;
+  padding: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.085);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.overview-card::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  content: "";
+  background: var(--accent-blue);
+  opacity: 0.62;
+}
+
+.overview-label {
+  display: block;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.overview-card strong {
+  color: var(--text);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 950;
+  letter-spacing: -0.075em;
+  line-height: 0.9;
+}
+
+.overview-card.highlight-s {
+  border-color: rgba(80, 242, 207, 0.28);
+  background: rgba(80, 242, 207, 0.065);
+}
+
+.overview-card.highlight-s::before {
+  background: linear-gradient(180deg, var(--accent), var(--success));
+  opacity: 1;
+}
+
+.overview-card.highlight-a::before {
+  background: var(--accent-blue);
+}
+
+.overview-card.highlight-done {
+  border-color: rgba(198, 247, 90, 0.2);
+}
+
+.overview-card.highlight-done::before {
+  background: var(--success);
+}
+
+.overview-card.highlight-overdue {
+  border-color: rgba(255, 123, 123, 0.22);
+  background: rgba(255, 123, 123, 0.045);
+}
+
+.overview-card.highlight-overdue::before {
+  background: var(--danger);
 }
 
 .add-project-panel {
@@ -452,6 +579,54 @@ h1 {
 
 .project-card.priority-c::after {
   background: radial-gradient(circle, rgba(127, 139, 158, 0.11), transparent 68%);
+}
+
+
+.project-card.is-overdue {
+  border-color: rgba(255, 123, 123, 0.34);
+  background:
+    linear-gradient(145deg, rgba(255, 123, 123, 0.09), rgba(255, 255, 255, 0.026) 52%),
+    var(--panel);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(255, 123, 123, 0.04) inset;
+}
+
+.project-card.is-overdue::before {
+  background: var(--danger);
+  opacity: 0.95;
+}
+
+.project-card.is-overdue::after {
+  background: radial-gradient(circle, rgba(255, 123, 123, 0.13), transparent 66%);
+}
+
+.project-card.is-due-soon {
+  border-color: rgba(247, 200, 106, 0.24);
+}
+
+.project-card.is-due-soon::before {
+  background: var(--warning);
+  opacity: 0.82;
+}
+
+.timing-badge {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 999px;
+}
+
+.timing-badge.overdue {
+  color: #ffd8d8;
+  border-color: rgba(255, 123, 123, 0.34);
+  background: rgba(255, 123, 123, 0.11);
+}
+
+.timing-badge.due-soon {
+  color: var(--warning);
+  border-color: rgba(247, 200, 106, 0.28);
+  background: rgba(247, 200, 106, 0.075);
 }
 
 .card-top {
@@ -812,6 +987,10 @@ h1 {
 }
 
 @media (max-width: 1100px) {
+  .overview-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .add-project-form {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -868,6 +1047,20 @@ h1 {
     display: block;
   }
 
+  .overview-panel {
+    padding: 20px;
+  }
+
+  .overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .completion-summary {
+    min-width: 100%;
+    margin-top: 16px;
+  }
+
+
   .add-project-panel {
     padding: 20px;
   }
@@ -902,6 +1095,7 @@ h1 {
     padding: 22px;
   }
 
+
   .card-top {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -935,6 +1129,10 @@ h1 {
 
   .toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-grid {
+    grid-template-columns: 1fr;
   }
 
   .search-field {
