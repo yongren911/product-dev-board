@@ -1,4 +1,5 @@
-const STORAGE_KEY = "product-dev-board-projects";
+const STORAGE_KEY = "productDevBoardProjects";
+const LEGACY_STORAGE_KEYS = ["product-dev-board-projects"];
 const PRIORITY_OPTIONS = ["S类", "A类", "B类", "C类"];
 const PROJECT_STATUS_OPTIONS = ["未开始", "进行中", "待确认", "已完成"];
 const BACKUP_FILE_NAME = "product-projects-backup.json";
@@ -6,44 +7,49 @@ const BACKUP_FILE_NAME = "product-projects-backup.json";
 // 默认项目数据：localStorage 没有数据时使用
 const defaultProjects = [
   {
+    id: "default-bsr-air-knee-26",
     name: "BSR 空气甲护膝 26款",
     priority: "S类",
-    status: "生产文档整理中",
+    currentStatus: "生产文档整理中",
     projectStatus: "进行中",
     deadline: "2026-06-10",
-    nextStep: "确认最终生产资料",
+    nextTask: "确认最终生产资料",
   },
   {
+    id: "default-tfcc-wrist-ultra-thin",
     name: "深护 TFCC 护腕超薄款",
     priority: "A类",
-    status: "推进 BOM 和打样图稿",
+    currentStatus: "推进 BOM 和打样图稿",
     projectStatus: "进行中",
     deadline: "2026-06-15",
-    nextStep: "完善结构细节",
+    nextTask: "完善结构细节",
   },
   {
+    id: "default-7d-signature-knee",
     name: "7D 签名护膝",
     priority: "B类",
-    status: "等待配色方案",
+    currentStatus: "等待配色方案",
     projectStatus: "待确认",
     deadline: "2026-06-20",
-    nextStep: "同步 Logo 方案",
+    nextTask: "同步 Logo 方案",
   },
   {
+    id: "default-signature-pro-patella",
     name: "签名版 Pro 单髌骨带",
     priority: "A类",
-    status: "等待样品确认",
+    currentStatus: "等待样品确认",
     projectStatus: "待确认",
     deadline: "2026-06-18",
-    nextStep: "确认样品外观",
+    nextTask: "确认样品外观",
   },
   {
+    id: "default-se-s-support-knee",
     name: "SE-S 支撑护膝",
     priority: "C类",
-    status: "样品待确认",
+    currentStatus: "样品待确认",
     projectStatus: "未开始",
     deadline: "",
-    nextStep: "记录测试反馈",
+    nextTask: "记录测试反馈",
   },
 ];
 
@@ -188,6 +194,14 @@ function getTrimmedValue(formData, key) {
   return String(formData.get(key) || "").trim();
 }
 
+function createProjectId() {
+  if (window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+
+  return `project-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function createDefaultProjects() {
   return defaultProjects.map((project) => ({ ...project }));
 }
@@ -195,25 +209,39 @@ function createDefaultProjects() {
 function normalizeProject(project) {
   if (!project
     || typeof project.name !== "string"
-    || !PRIORITY_OPTIONS.includes(project.priority)
-    || typeof project.status !== "string"
-    || typeof project.nextStep !== "string") {
+    || !PRIORITY_OPTIONS.includes(project.priority)) {
     return null;
   }
 
-  // 兼容旧版 localStorage：没有项目状态或截止时间时补默认值
+  // 兼容旧版数据字段：status/nextStep 会统一整理为 currentStatus/nextTask
+  const currentStatus = typeof project.currentStatus === "string"
+    ? project.currentStatus
+    : project.status;
+  const nextTask = typeof project.nextTask === "string"
+    ? project.nextTask
+    : project.nextStep;
+
+  if (typeof currentStatus !== "string" || typeof nextTask !== "string") {
+    return null;
+  }
+
+  // 兼容旧版 localStorage：没有项目状态、截止时间或 id 时补默认值
   const projectStatus = PROJECT_STATUS_OPTIONS.includes(project.projectStatus)
     ? project.projectStatus
     : "进行中";
   const deadline = typeof project.deadline === "string" ? project.deadline : "";
+  const id = typeof project.id === "string" && project.id.trim()
+    ? project.id
+    : createProjectId();
 
   return {
+    id,
     name: project.name,
     priority: project.priority,
-    status: project.status,
+    currentStatus,
     projectStatus,
     deadline,
-    nextStep: project.nextStep,
+    nextTask,
   };
 }
 
@@ -239,12 +267,13 @@ function normalizeProjectList(projectList) {
 function getExportProjects() {
   // 导出字段与 localStorage 保存结构保持一致，便于后续直接恢复
   return projects.map((project) => ({
+    id: project.id,
     name: project.name,
     priority: project.priority,
-    status: project.status,
+    currentStatus: project.currentStatus,
     projectStatus: project.projectStatus,
     deadline: project.deadline,
-    nextStep: project.nextStep,
+    nextTask: project.nextTask,
   }));
 }
 
@@ -308,28 +337,58 @@ function importProjects(file) {
   reader.readAsText(file);
 }
 
-function loadProjects() {
-  const savedProjects = localStorage.getItem(STORAGE_KEY);
+function parseSavedProjects(savedProjects) {
+  try {
+    const parsedProjects = JSON.parse(savedProjects);
+    const normalizedProjects = normalizeProjectList(parsedProjects);
 
-  if (!savedProjects) {
+    if (normalizedProjects) {
+      return normalizedProjects;
+    }
+  } catch (error) {
+    console.error("读取本地数据失败", error);
+  }
+
+  return null;
+}
+
+function loadProjects() {
+  // 页面初始化时优先读取固定 key 的 localStorage，只有没有本地数据时才使用默认项目。
+  const saved = localStorage.getItem(STORAGE_KEY);
+
+  if (saved) {
+    const savedProjects = parseSavedProjects(saved);
+
+    if (savedProjects) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(savedProjects));
+      return savedProjects;
+    }
+
     return createDefaultProjects();
   }
 
-  try {
-    const parsedProjects = JSON.parse(savedProjects);
+  // 兼容旧版本 key：读取到旧数据后立即迁移到固定 key，避免读写 key 不一致。
+  for (const legacyKey of LEGACY_STORAGE_KEYS) {
+    const legacySaved = localStorage.getItem(legacyKey);
 
-    if (Array.isArray(parsedProjects)) {
-      return parsedProjects.map(normalizeProject).filter(Boolean);
+    if (!legacySaved) {
+      continue;
     }
-  } catch (error) {
-    console.warn("读取项目数据失败，已恢复默认项目。", error);
+
+    const legacyProjects = parseSavedProjects(legacySaved);
+
+    if (legacyProjects) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(legacyProjects));
+      localStorage.removeItem(legacyKey);
+      return legacyProjects;
+    }
   }
 
   return createDefaultProjects();
 }
 
-// 保存完整项目列表，确保新增和删除刷新后仍然保留
 function saveProjects() {
+  // 每次新增、编辑、删除、导入或恢复默认后，都保存完整 projects 数组到同一个 localStorage key。
   localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
 }
 
@@ -357,25 +416,29 @@ function isProjectMatchedBySearch(project) {
   const normalizedKeyword = searchKeyword.toLowerCase();
 
   // 搜索同时覆盖项目名称、当前状态、项目状态和下一步任务
-  return [project.name, project.status, project.projectStatus, project.nextStep]
+  return [project.name, project.currentStatus, project.projectStatus, project.nextTask]
     .some((value) => value.toLowerCase().includes(normalizedKeyword));
 }
 
-function openEditDialog(projectIndex) {
-  const project = projects[projectIndex];
+function findProjectIndexById(projectId) {
+  return projects.findIndex((project) => project.id === projectId);
+}
+
+function openEditDialog(projectId) {
+  const project = projects.find((item) => item.id === projectId);
 
   if (!project) {
     return;
   }
 
   // 打开编辑表单前先填入当前项目数据，取消时不会改动原数据
-  editProjectForm.elements.index.value = projectIndex;
+  editProjectForm.elements.id.value = project.id;
   editProjectForm.elements.name.value = project.name;
   editProjectForm.elements.priority.value = project.priority;
-  editProjectForm.elements.status.value = project.status;
+  editProjectForm.elements.status.value = project.currentStatus;
   editProjectForm.elements.projectStatus.value = project.projectStatus;
   editProjectForm.elements.deadline.value = project.deadline;
-  editProjectForm.elements.nextStep.value = project.nextStep;
+  editProjectForm.elements.nextStep.value = project.nextTask;
 
   if (typeof editProjectDialog.showModal === "function") {
     editProjectDialog.showModal();
@@ -400,7 +463,6 @@ function renderProjects(filter = activeFilter) {
   }
 
   projectGrid.innerHTML = visibleProjects.map((project) => {
-    const originalIndex = projects.indexOf(project);
     const priorityClass = getPriorityClass(project.priority);
     const projectStatusClass = getProjectStatusClass(project.projectStatus);
     const isOverdue = isProjectOverdue(project);
@@ -413,7 +475,7 @@ function renderProjects(filter = activeFilter) {
     const cardStateClass = isOverdue ? "is-overdue" : isDueSoon ? "is-due-soon" : "";
 
     return `
-      <article class="project-card priority-${priorityClass} ${cardStateClass}" data-project-index="${originalIndex}">
+      <article class="project-card priority-${priorityClass} ${cardStateClass}" data-project-id="${escapeHTML(project.id)}">
         <div class="card-top">
           <div class="card-title-group">
             <span class="project-code">Dev Sprint / ${priorityClass.toUpperCase()}-Guard</span>
@@ -426,15 +488,15 @@ function renderProjects(filter = activeFilter) {
               ${timingBadge}
             </div>
             <div class="card-action-buttons">
-              <button class="edit-button" type="button" data-edit-index="${originalIndex}" aria-label="编辑 ${escapeHTML(project.name)}">编辑</button>
-              <button class="delete-button" type="button" data-delete-index="${originalIndex}" aria-label="删除 ${escapeHTML(project.name)}">删除</button>
+              <button class="edit-button" type="button" data-edit-id="${escapeHTML(project.id)}" aria-label="编辑 ${escapeHTML(project.name)}">编辑</button>
+              <button class="delete-button" type="button" data-delete-id="${escapeHTML(project.id)}" aria-label="删除 ${escapeHTML(project.name)}">删除</button>
             </div>
           </div>
         </div>
         <div class="card-detail">
           <div class="detail-item">
             <span class="detail-label">当前状态</span>
-            <p class="detail-value">${escapeHTML(project.status)}</p>
+            <p class="detail-value">${escapeHTML(project.currentStatus)}</p>
           </div>
           <div class="detail-item">
             <span class="detail-label">截止时间</span>
@@ -442,7 +504,7 @@ function renderProjects(filter = activeFilter) {
           </div>
           <div class="detail-item">
             <span class="detail-label">下一步任务</span>
-            <p class="detail-value">${escapeHTML(project.nextStep)}</p>
+            <p class="detail-value">${escapeHTML(project.nextTask)}</p>
           </div>
         </div>
         <div class="card-footer" aria-hidden="true">
@@ -478,23 +540,24 @@ addProjectForm.addEventListener("submit", (event) => {
 
   const formData = new FormData(addProjectForm);
   const newProject = {
+    id: createProjectId(),
     name: getTrimmedValue(formData, "name"),
     priority: getTrimmedValue(formData, "priority"),
-    status: getTrimmedValue(formData, "status"),
+    currentStatus: getTrimmedValue(formData, "status"),
     projectStatus: getTrimmedValue(formData, "projectStatus"),
     deadline: getTrimmedValue(formData, "deadline"),
-    nextStep: getTrimmedValue(formData, "nextStep"),
+    nextTask: getTrimmedValue(formData, "nextStep"),
   };
 
   if (!newProject.name
     || !PRIORITY_OPTIONS.includes(newProject.priority)
-    || !newProject.status
+    || !newProject.currentStatus
     || !PROJECT_STATUS_OPTIONS.includes(newProject.projectStatus)
-    || !newProject.nextStep) {
+    || !newProject.nextTask) {
     return;
   }
 
-  projects.unshift(newProject);
+  projects.push(newProject);
   saveProjects();
   addProjectForm.reset();
   setActiveFilter(newProject.priority);
@@ -507,7 +570,7 @@ projectGrid.addEventListener("click", (event) => {
   const deleteButton = event.target.closest(".delete-button");
 
   if (editButton) {
-    openEditDialog(Number(editButton.dataset.editIndex));
+    openEditDialog(editButton.dataset.editId);
     return;
   }
 
@@ -515,7 +578,8 @@ projectGrid.addEventListener("click", (event) => {
     return;
   }
 
-  const projectIndex = Number(deleteButton.dataset.deleteIndex);
+  const projectId = deleteButton.dataset.deleteId;
+  const projectIndex = findProjectIndexById(projectId);
   const project = projects[projectIndex];
 
   if (!project || !window.confirm(`确认删除「${project.name}」吗？`)) {
@@ -531,27 +595,29 @@ editProjectForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const formData = new FormData(editProjectForm);
-  const projectIndex = Number(formData.get("index"));
+  const projectId = String(formData.get("id") || "");
+  const projectIndex = findProjectIndexById(projectId);
 
-  if (!projects[projectIndex]) {
+  if (projectIndex < 0) {
     closeEditDialog();
     return;
   }
 
   const updatedProject = {
+    id: projectId,
     name: getTrimmedValue(formData, "name"),
     priority: getTrimmedValue(formData, "priority"),
-    status: getTrimmedValue(formData, "status"),
+    currentStatus: getTrimmedValue(formData, "status"),
     projectStatus: getTrimmedValue(formData, "projectStatus"),
     deadline: getTrimmedValue(formData, "deadline"),
-    nextStep: getTrimmedValue(formData, "nextStep"),
+    nextTask: getTrimmedValue(formData, "nextStep"),
   };
 
   if (!updatedProject.name
     || !PRIORITY_OPTIONS.includes(updatedProject.priority)
-    || !updatedProject.status
+    || !updatedProject.currentStatus
     || !PROJECT_STATUS_OPTIONS.includes(updatedProject.projectStatus)
-    || !updatedProject.nextStep) {
+    || !updatedProject.nextTask) {
     return;
   }
 
@@ -577,9 +643,9 @@ resetProjectsButton.addEventListener("click", () => {
     return;
   }
 
-  // 清空本地保存并回到默认列表
-  localStorage.removeItem(STORAGE_KEY);
+  // 只有恢复默认项目允许覆盖用户数据；覆盖后也立即保存到 localStorage。
   projects = createDefaultProjects();
+  saveProjects();
   setActiveFilter("全部");
   searchKeyword = "";
   projectSearchInput.value = "";
