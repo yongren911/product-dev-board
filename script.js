@@ -40,6 +40,9 @@ const filterButtons = document.querySelectorAll(".filter-button");
 const visibleCount = document.querySelector("#visible-count");
 const addProjectForm = document.querySelector("#add-project-form");
 const resetProjectsButton = document.querySelector("#reset-projects");
+const editProjectDialog = document.querySelector("#edit-project-dialog");
+const editProjectForm = document.querySelector("#edit-project-form");
+const editCancelButtons = document.querySelectorAll("[data-edit-cancel]");
 
 let activeFilter = "全部";
 let projects = loadProjects();
@@ -118,6 +121,35 @@ function setActiveFilter(filter) {
   });
 }
 
+function closeEditDialog() {
+  editProjectForm.reset();
+
+  if (typeof editProjectDialog.close === "function") {
+    editProjectDialog.close();
+  }
+}
+
+function openEditDialog(projectIndex) {
+  const project = projects[projectIndex];
+
+  if (!project) {
+    return;
+  }
+
+  // 打开编辑表单前先填入当前项目数据，取消时不会改动原数据
+  editProjectForm.elements.index.value = projectIndex;
+  editProjectForm.elements.name.value = project.name;
+  editProjectForm.elements.priority.value = project.priority;
+  editProjectForm.elements.status.value = project.status;
+  editProjectForm.elements.nextStep.value = project.nextStep;
+
+  if (typeof editProjectDialog.showModal === "function") {
+    editProjectDialog.showModal();
+  } else {
+    editProjectDialog.setAttribute("open", "");
+  }
+}
+
 // 根据筛选条件渲染项目卡片
 function renderProjects(filter = activeFilter) {
   const visibleProjects = filter === "全部"
@@ -144,7 +176,10 @@ function renderProjects(filter = activeFilter) {
           </div>
           <div class="card-actions">
             <span class="priority-badge ${priorityClass}">${project.priority}</span>
-            <button class="delete-button" type="button" data-delete-index="${originalIndex}" aria-label="删除 ${escapeHTML(project.name)}">删除</button>
+            <div class="card-action-buttons">
+              <button class="edit-button" type="button" data-edit-index="${originalIndex}" aria-label="编辑 ${escapeHTML(project.name)}">编辑</button>
+              <button class="delete-button" type="button" data-delete-index="${originalIndex}" aria-label="删除 ${escapeHTML(project.name)}">删除</button>
+            </div>
           </div>
         </div>
         <div class="card-detail">
@@ -195,9 +230,15 @@ addProjectForm.addEventListener("submit", (event) => {
   renderProjects();
 });
 
-// 使用事件委托处理删除按钮，删除后立即保存到 localStorage
+// 使用事件委托处理编辑和删除按钮，保持卡片重新渲染后按钮仍然可用
 projectGrid.addEventListener("click", (event) => {
+  const editButton = event.target.closest(".edit-button");
   const deleteButton = event.target.closest(".delete-button");
+
+  if (editButton) {
+    openEditDialog(Number(editButton.dataset.editIndex));
+    return;
+  }
 
   if (!deleteButton) {
     return;
@@ -213,6 +254,48 @@ projectGrid.addEventListener("click", (event) => {
   projects.splice(projectIndex, 1);
   saveProjects();
   renderProjects();
+});
+
+editProjectForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const formData = new FormData(editProjectForm);
+  const projectIndex = Number(formData.get("index"));
+
+  if (!projects[projectIndex]) {
+    closeEditDialog();
+    return;
+  }
+
+  const updatedProject = {
+    name: getTrimmedValue(formData, "name"),
+    priority: getTrimmedValue(formData, "priority"),
+    status: getTrimmedValue(formData, "status"),
+    nextStep: getTrimmedValue(formData, "nextStep"),
+  };
+
+  if (!updatedProject.name
+    || !PRIORITY_OPTIONS.includes(updatedProject.priority)
+    || !updatedProject.status
+    || !updatedProject.nextStep) {
+    return;
+  }
+
+  // 保存编辑后的完整项目列表，刷新页面后仍从 localStorage 读取最新内容
+  projects[projectIndex] = updatedProject;
+  saveProjects();
+  renderProjects();
+  closeEditDialog();
+});
+
+editCancelButtons.forEach((button) => {
+  button.addEventListener("click", closeEditDialog);
+});
+
+editProjectDialog.addEventListener("click", (event) => {
+  if (event.target === editProjectDialog) {
+    closeEditDialog();
+  }
 });
 
 resetProjectsButton.addEventListener("click", () => {

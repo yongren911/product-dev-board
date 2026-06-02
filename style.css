@@ -425,6 +425,14 @@ h1 {
   gap: 10px;
 }
 
+.card-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.edit-button,
 .delete-button {
   padding: 5px 10px;
   color: var(--muted);
@@ -436,6 +444,13 @@ h1 {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.035);
   transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.edit-button:hover {
+  color: var(--accent);
+  border-color: rgba(80, 242, 207, 0.34);
+  background: rgba(80, 242, 207, 0.08);
+  transform: translateY(-1px);
 }
 
 .delete-button:hover {
@@ -588,6 +603,112 @@ h1 {
   background: linear-gradient(90deg, #7f8b9e, #b1bdcd);
 }
 
+.edit-dialog {
+  width: min(560px, calc(100% - 28px));
+  padding: 0;
+  color: var(--text);
+  border: 1px solid rgba(80, 242, 207, 0.22);
+  border-radius: 28px;
+  background:
+    linear-gradient(145deg, rgba(22, 31, 46, 0.98), rgba(8, 13, 22, 0.96)),
+    var(--panel-strong);
+  box-shadow: 0 34px 100px rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(24px);
+}
+
+.edit-dialog::backdrop {
+  background:
+    radial-gradient(circle at 50% 22%, rgba(80, 242, 207, 0.14), transparent 24rem),
+    rgba(1, 4, 9, 0.76);
+  backdrop-filter: blur(10px);
+}
+
+.edit-project-form {
+  display: grid;
+  gap: 16px;
+  padding: 26px;
+}
+
+.edit-dialog-heading {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.edit-dialog-heading .eyebrow {
+  margin-bottom: 8px;
+}
+
+.edit-dialog-heading h2 {
+  margin: 0;
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  letter-spacing: -0.045em;
+}
+
+.dialog-close-button {
+  width: 38px;
+  height: 38px;
+  color: var(--muted);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.dialog-close-button:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.09);
+  transform: translateY(-1px);
+}
+
+.edit-form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 6px;
+}
+
+.save-edit-button,
+.cancel-edit-button {
+  min-height: 44px;
+  padding: 0 20px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+  border-radius: 999px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.save-edit-button {
+  color: #03110f;
+  border: 0;
+  background: linear-gradient(135deg, var(--accent), var(--success));
+  box-shadow: 0 16px 36px rgba(80, 242, 207, 0.2);
+}
+
+.save-edit-button:hover {
+  box-shadow: 0 20px 48px rgba(80, 242, 207, 0.28);
+  transform: translateY(-1px);
+}
+
+.cancel-edit-button {
+  color: var(--muted-strong);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.cancel-edit-button:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.09);
+  transform: translateY(-1px);
+}
+
 .empty-state {
   grid-column: 1 / -1;
   padding: 42px;
@@ -679,6 +800,10 @@ h1 {
     justify-items: start;
   }
 
+  .card-action-buttons {
+    justify-content: flex-start;
+  }
+
   .priority-badge {
     justify-self: start;
   }
@@ -703,5 +828,14 @@ h1 {
 
   .detail-item {
     padding: 13px;
+  }
+
+  .edit-project-form {
+    padding: 20px;
+  }
+
+  .edit-form-actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 }
