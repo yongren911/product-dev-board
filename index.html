@@ -26,40 +26,41 @@
           <p class="eyebrow">Data Overview</p>
           <h2 id="overview-title">数据总览</h2>
         </div>
-        <div class="overview-side-actions">
-          <div class="completion-summary" aria-label="整体完成进度">
-            <span id="completion-label">完成进度 0%</span>
-            <div class="completion-track" aria-hidden="true">
-              <span id="completion-bar" style="--completion: 0%"></span>
-            </div>
+        <button id="toggle-overview" class="overview-toggle-button" type="button" aria-expanded="true" aria-controls="overview-content">折叠</button>
+      </div>
+      <div id="overview-content" class="overview-content">
+        <div class="completion-summary" aria-label="整体完成进度">
+          <span id="completion-label">完成进度 0%</span>
+          <div class="completion-track" aria-hidden="true">
+            <span id="completion-bar" style="--completion: 0%"></span>
           </div>
         </div>
-      </div>
-      <div class="overview-grid">
-        <article class="overview-card">
-          <span class="overview-label">项目总数</span>
-          <strong id="stat-total">0</strong>
-        </article>
-        <article class="overview-card highlight-s">
-          <span class="overview-label">S类项目</span>
-          <strong id="stat-s">0</strong>
-        </article>
-        <article class="overview-card highlight-a">
-          <span class="overview-label">A类项目</span>
-          <strong id="stat-a">0</strong>
-        </article>
-        <article class="overview-card">
-          <span class="overview-label">进行中项目</span>
-          <strong id="stat-progressing">0</strong>
-        </article>
-        <article class="overview-card highlight-done">
-          <span class="overview-label">已完成项目</span>
-          <strong id="stat-done">0</strong>
-        </article>
-        <article class="overview-card highlight-overdue">
-          <span class="overview-label">逾期项目</span>
-          <strong id="stat-overdue">0</strong>
-        </article>
+        <div class="overview-grid">
+          <article class="overview-card">
+            <span class="overview-label">项目总数</span>
+            <strong id="stat-total">0</strong>
+          </article>
+          <article class="overview-card highlight-s">
+            <span class="overview-label">S类项目</span>
+            <strong id="stat-s">0</strong>
+          </article>
+          <article class="overview-card highlight-a">
+            <span class="overview-label">A类项目</span>
+            <strong id="stat-a">0</strong>
+          </article>
+          <article class="overview-card">
+            <span class="overview-label">进行中项目</span>
+            <strong id="stat-progressing">0</strong>
+          </article>
+          <article class="overview-card highlight-done">
+            <span class="overview-label">已完成项目</span>
+            <strong id="stat-done">0</strong>
+          </article>
+          <article class="overview-card highlight-overdue">
+            <span class="overview-label">逾期项目</span>
+            <strong id="stat-overdue">0</strong>
+          </article>
+        </div>
       </div>
     </section>
 
@@ -69,37 +70,17 @@
           <p class="eyebrow">Data Management</p>
           <h2 id="data-management-title">数据管理</h2>
         </div>
-        <p class="data-management-tip">建议使用 CSV 或 JSON 进行数据导入；PDF 和 Word 适合导出汇报，不建议用于导入。</p>
+        <p class="data-management-tip">建议使用 CSV 进行数据导入；PDF 和 Word 适合导出汇报，不建议用于导入。</p>
       </div>
       <div class="data-transfer-actions" aria-label="项目数据导出和导入">
         <button id="export-csv" class="data-transfer-button export-button" type="button">导出表格 CSV</button>
         <button id="export-word" class="data-transfer-button" type="button">导出 Word 文档</button>
         <button id="export-pdf" class="data-transfer-button" type="button">导出 PDF / 打印</button>
-        <button id="export-json" class="data-transfer-button" type="button">导出 JSON 备份</button>
-        <button id="generate-weekly-report" class="data-transfer-button weekly-report-button" type="button">生成周报</button>
         <label class="data-transfer-button import-button" for="import-csv-file">
           导入表格 CSV
           <input id="import-csv-file" type="file" accept=".csv,text/csv" />
         </label>
-        <label class="data-transfer-button import-button" for="import-json-file">
-          导入 JSON 备份
-          <input id="import-json-file" type="file" accept="application/json,.json" />
-        </label>
       </div>
-    </section>
-
-    <section id="weekly-report-panel" class="weekly-report-panel" aria-labelledby="weekly-report-title" hidden>
-      <div class="section-heading weekly-report-heading">
-        <div>
-          <p class="eyebrow">Weekly Sync</p>
-          <h2 id="weekly-report-title">产品开发周报</h2>
-        </div>
-        <div class="weekly-report-actions">
-          <button id="copy-weekly-report" class="copy-weekly-report-button" type="button">复制周报</button>
-          <span id="weekly-report-copy-status" class="weekly-report-copy-status" aria-live="polite"></span>
-        </div>
-      </div>
-      <textarea id="weekly-report-text" class="weekly-report-text" readonly aria-label="生成的产品开发周报文本"></textarea>
     </section>
 
     <section id="print-report" class="print-report" aria-labelledby="print-report-title"></section>
@@ -175,6 +156,31 @@
     </section>
 
     <section id="project-grid" class="project-grid" aria-live="polite"></section>
+
+    <section class="weekly-sync-panel" aria-labelledby="weekly-sync-title">
+      <div class="section-heading weekly-sync-heading">
+        <div>
+          <p class="eyebrow">Weekly Sync</p>
+          <h2 id="weekly-sync-title">WEEKLY SYNC / 产品开发周报</h2>
+        </div>
+        <button id="generate-weekly-report" class="data-transfer-button weekly-report-button" type="button">生成周报</button>
+      </div>
+      <p class="weekly-sync-tip">一键汇总重点项目、普通项目、完成项、风险事项和下周计划，适合周会同步与跨部门沟通。</p>
+      <div id="weekly-report-panel" class="weekly-report-panel" hidden>
+        <div class="weekly-report-content-header">
+          <div>
+            <p class="eyebrow">Weekly Report Content</p>
+            <h3 id="weekly-report-title">周报内容</h3>
+          </div>
+          <div class="weekly-report-actions">
+            <button id="copy-weekly-report" class="copy-weekly-report-button" type="button">复制周报</button>
+            <button id="close-weekly-report" class="close-weekly-report-button" type="button" aria-label="关闭周报内容">×</button>
+            <span id="weekly-report-copy-status" class="weekly-report-copy-status" aria-live="polite"></span>
+          </div>
+        </div>
+        <textarea id="weekly-report-text" class="weekly-report-text" readonly aria-label="生成的产品开发周报文本"></textarea>
+      </div>
+    </section>
   </main>
 
   <dialog id="edit-project-dialog" class="edit-dialog" aria-labelledby="edit-project-title">
