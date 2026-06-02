@@ -2,7 +2,18 @@ const STORAGE_KEY = "productDevBoardProjects";
 const LEGACY_STORAGE_KEYS = ["product-dev-board-projects"];
 const PRIORITY_OPTIONS = ["S类", "A类", "B类", "C类"];
 const PROJECT_STATUS_OPTIONS = ["未开始", "进行中", "待确认", "已完成"];
+const CSV_FILE_NAME = "product-projects.csv";
+const WORD_FILE_NAME = "product-projects-report.doc";
 const BACKUP_FILE_NAME = "product-projects-backup.json";
+const CSV_HEADERS = ["项目名称", "优先级", "当前状态", "项目状态", "截止时间", "下一步任务"];
+const CSV_HEADER_TO_PROJECT_KEY = {
+  "项目名称": "name",
+  "优先级": "priority",
+  "当前状态": "currentStatus",
+  "项目状态": "projectStatus",
+  "截止时间": "deadline",
+  "下一步任务": "nextTask",
+};
 
 // 默认项目数据：localStorage 没有数据时使用
 const defaultProjects = [
@@ -70,8 +81,13 @@ const statDone = document.querySelector("#stat-done");
 const statOverdue = document.querySelector("#stat-overdue");
 const completionLabel = document.querySelector("#completion-label");
 const completionBar = document.querySelector("#completion-bar");
-const exportProjectsButton = document.querySelector("#export-projects");
-const importProjectsFileInput = document.querySelector("#import-projects-file");
+const exportCsvButton = document.querySelector("#export-csv");
+const exportWordButton = document.querySelector("#export-word");
+const exportPdfButton = document.querySelector("#export-pdf");
+const exportJsonButton = document.querySelector("#export-json");
+const importCsvFileInput = document.querySelector("#import-csv-file");
+const importJsonFileInput = document.querySelector("#import-json-file");
+const printReport = document.querySelector("#print-report");
 
 let activeFilter = "全部";
 let searchKeyword = "";
@@ -181,7 +197,7 @@ function getPriorityProgress(priority) {
 }
 
 function escapeHTML(value) {
-  return value.replace(/[&<>'"]/g, (character) => ({
+  return String(value).replace(/[&<>'"]/g, (character) => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -277,27 +293,264 @@ function getExportProjects() {
   }));
 }
 
-function exportProjects() {
-  const backupContent = JSON.stringify(getExportProjects(), null, 2);
-  const backupBlob = new Blob([backupContent], { type: "application/json;charset=utf-8" });
-  const downloadUrl = URL.createObjectURL(backupBlob);
+function downloadBlob(contentParts, fileName, mimeType) {
+  const blob = new Blob(contentParts, { type: mimeType });
+  const downloadUrl = URL.createObjectURL(blob);
   const downloadLink = document.createElement("a");
 
   downloadLink.href = downloadUrl;
-  downloadLink.download = BACKUP_FILE_NAME;
+  downloadLink.download = fileName;
   document.body.appendChild(downloadLink);
   downloadLink.click();
   downloadLink.remove();
   URL.revokeObjectURL(downloadUrl);
 }
 
-function importProjects(file) {
+function getReportRows() {
+  return projects.map((project) => [
+    project.name,
+    project.priority,
+    project.currentStatus,
+    project.projectStatus,
+    getDeadlineText(project.deadline),
+    project.nextTask,
+  ]);
+}
+
+function escapeCsvField(value) {
+  const stringValue = String(value ?? "");
+
+  // CSV 字段中出现逗号、换行或引号时必须用双引号包裹，引号本身写成两个引号。
+  if (/[",\r\n]/.test(stringValue)) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+
+  return stringValue;
+}
+
+function exportCsvProjects() {
+  const csvRows = [CSV_HEADERS, ...getReportRows()]
+    .map((row) => row.map(escapeCsvField).join(","));
+
+  // 在文件开头加入 BOM，避免 Excel 打开中文 CSV 时出现乱码。
+  downloadBlob(["\uFEFF", csvRows.join("\r\n")], CSV_FILE_NAME, "text/csv;charset=utf-8");
+}
+
+function getFormattedExportTime() {
+  return new Date().toLocaleString("zh-CN", { hour12: false });
+}
+
+function getOverviewHtml() {
+  const stats = getProjectStats();
+
+  return `
+    <div class="report-overview">
+      <div><span>项目总数</span><strong>${stats.total}</strong></div>
+      <div><span>S类项目</span><strong>${stats.s}</strong></div>
+      <div><span>A类项目</span><strong>${stats.a}</strong></div>
+      <div><span>进行中项目</span><strong>${stats.progressing}</strong></div>
+      <div><span>已完成项目</span><strong>${stats.done}</strong></div>
+      <div><span>逾期项目</span><strong>${stats.overdue}</strong></div>
+      <div><span>完成进度</span><strong>${stats.completion}%</strong></div>
+    </div>
+  `;
+}
+
+function getReportTableHtml() {
+  const headerHtml = CSV_HEADERS.map((header) => `<th>${escapeHTML(header)}</th>`).join("");
+  const bodyHtml = getReportRows().map((row) => `
+    <tr>${row.map((cell) => `<td>${escapeHTML(cell)}</td>`).join("")}</tr>
+  `).join("");
+
+  return `
+    <table class="report-table">
+      <thead><tr>${headerHtml}</tr></thead>
+      <tbody>${bodyHtml || `<tr><td colspan="${CSV_HEADERS.length}">暂无项目数据</td></tr>`}</tbody>
+    </table>
+  `;
+}
+
+function exportWordProjects() {
+  const html = `
+    <!DOCTYPE html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="UTF-8" />
+      <title>产品开发进度看板</title>
+      <style>
+        body { font-family: "Microsoft YaHei", Arial, sans-serif; color: #1f2937; }
+        h1 { margin-bottom: 8px; color: #111827; }
+        .meta { color: #6b7280; margin-bottom: 18px; }
+        .report-overview { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 20px; }
+        .report-overview div { padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+        .report-overview span { display: block; font-size: 12px; color: #6b7280; }
+        .report-overview strong { font-size: 20px; color: #111827; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 9px 10px; border: 1px solid #d1d5db; text-align: left; vertical-align: top; }
+        th { background: #eef2ff; color: #111827; }
+      </style>
+    </head>
+    <body>
+      <h1>产品开发进度看板</h1>
+      <p class="meta">导出时间：${escapeHTML(getFormattedExportTime())}</p>
+      <h2>数据总览</h2>
+      ${getOverviewHtml()}
+      <h2>项目明细表格</h2>
+      ${getReportTableHtml()}
+    </body>
+    </html>
+  `;
+
+  downloadBlob(["\uFEFF", html], WORD_FILE_NAME, "application/msword;charset=utf-8");
+}
+
+function exportJsonProjects() {
+  const backupContent = JSON.stringify(getExportProjects(), null, 2);
+  downloadBlob([backupContent], BACKUP_FILE_NAME, "application/json;charset=utf-8");
+}
+
+function renderPrintReport() {
+  printReport.innerHTML = `
+    <h1 id="print-report-title">产品开发进度看板</h1>
+    <p class="print-export-time">导出时间：${escapeHTML(getFormattedExportTime())}</p>
+    <h2>数据总览</h2>
+    ${getOverviewHtml()}
+    <h2>完成进度</h2>
+    <div class="print-progress"><span style="width: ${getProjectStats().completion}%"></span></div>
+    <h2>项目明细表格</h2>
+    ${getReportTableHtml()}
+  `;
+}
+
+function exportPdfProjects() {
+  renderPrintReport();
+  window.print();
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let isQuoted = false;
+
+  // 逐字符解析 CSV，支持引号内逗号、换行和双引号转义。
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
+    const nextCharacter = text[index + 1];
+
+    if (isQuoted) {
+      if (character === '"' && nextCharacter === '"') {
+        field += '"';
+        index += 1;
+      } else if (character === '"') {
+        isQuoted = false;
+      } else {
+        field += character;
+      }
+      continue;
+    }
+
+    if (character === '"') {
+      isQuoted = true;
+    } else if (character === ",") {
+      row.push(field);
+      field = "";
+    } else if (character === "\n") {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+    } else if (character !== "\r") {
+      field += character;
+    }
+  }
+
+  if (isQuoted) {
+    throw new Error("CSV 引号未闭合");
+  }
+
+  row.push(field);
+  rows.push(row);
+
+  return rows.filter((item) => item.some((cell) => cell.trim() !== ""));
+}
+
+function normalizeCsvProject(rawProject) {
+  const name = String(rawProject.name || "").trim();
+
+  if (!name) {
+    return null;
+  }
+
+  const priority = PRIORITY_OPTIONS.includes(rawProject.priority) ? rawProject.priority : "C类";
+  const projectStatus = PROJECT_STATUS_OPTIONS.includes(rawProject.projectStatus) ? rawProject.projectStatus : "进行中";
+
+  return {
+    id: createProjectId(),
+    name,
+    priority,
+    currentStatus: String(rawProject.currentStatus || "未填写").trim() || "未填写",
+    projectStatus,
+    deadline: String(rawProject.deadline || "").trim(),
+    nextTask: String(rawProject.nextTask || "待补充").trim() || "待补充",
+  };
+}
+
+function parseCsvProjects(csvText) {
+  const normalizedText = String(csvText || "").replace(/^\uFEFF/, "");
+  const rows = parseCsv(normalizedText);
+
+  if (rows.length < 2) {
+    return null;
+  }
+
+  const headers = rows[0].map((header) => header.trim());
+  const requiredHeaderMissing = CSV_HEADERS.some((header) => !headers.includes(header));
+
+  if (requiredHeaderMissing) {
+    return null;
+  }
+
+  const importedProjects = rows.slice(1)
+    .map((row) => {
+      const rawProject = {};
+
+      headers.forEach((header, index) => {
+        const projectKey = CSV_HEADER_TO_PROJECT_KEY[header];
+
+        if (projectKey) {
+          rawProject[projectKey] = row[index] || "";
+        }
+      });
+
+      return normalizeCsvProject(rawProject);
+    })
+    .filter(Boolean);
+
+  return importedProjects.length > 0 ? importedProjects : null;
+}
+
+function applyImportedProjects(importedProjects) {
+  // 导入成功后立即刷新页面状态并写入 localStorage，确保刷新后仍保留。
+  projects = importedProjects;
+  saveProjects();
+  setActiveFilter("全部");
+  searchKeyword = "";
+  projectSearchInput.value = "";
+  renderProjects();
+}
+
+function importProjects(file, importType) {
   if (!file) {
     return;
   }
 
-  if (!window.confirm("导入数据会覆盖当前项目列表，确认继续吗？")) {
-    importProjectsFileInput.value = "";
+  if (!window.confirm("导入数据会覆盖当前项目列表，是否继续？")) {
+    if (importType === "csv") {
+      importCsvFileInput.value = "";
+    } else {
+      importJsonFileInput.value = "";
+    }
     return;
   }
 
@@ -305,33 +558,37 @@ function importProjects(file) {
 
   reader.addEventListener("load", () => {
     try {
-      const parsedProjects = JSON.parse(String(reader.result || ""));
-      const importedProjects = normalizeProjectList(parsedProjects);
+      const fileContent = String(reader.result || "");
+      const importedProjects = importType === "csv"
+        ? parseCsvProjects(fileContent)
+        : normalizeProjectList(JSON.parse(fileContent));
 
       if (!importedProjects) {
-        window.alert("导入的文件格式不正确");
+        window.alert(importType === "csv" ? "CSV 格式错误，请检查表头和数据内容" : "JSON 格式错误，请检查备份文件内容");
         return;
       }
 
-      // 导入成功后立即刷新页面状态并写入 localStorage，确保刷新后仍保留
-      projects = importedProjects;
-      saveProjects();
-      setActiveFilter("全部");
-      searchKeyword = "";
-      projectSearchInput.value = "";
-      renderProjects();
+      applyImportedProjects(importedProjects);
       window.alert("数据导入成功");
     } catch (error) {
       console.warn("导入项目数据失败。", error);
-      window.alert("文件格式错误");
+      window.alert(importType === "csv" ? "CSV 格式错误，请检查表头和数据内容" : "JSON 格式错误，请检查备份文件内容");
     } finally {
-      importProjectsFileInput.value = "";
+      if (importType === "csv") {
+        importCsvFileInput.value = "";
+      } else {
+        importJsonFileInput.value = "";
+      }
     }
   });
 
   reader.addEventListener("error", () => {
-    window.alert("文件格式错误");
-    importProjectsFileInput.value = "";
+    window.alert(importType === "csv" ? "CSV 格式错误，请检查表头和数据内容" : "JSON 格式错误，请检查备份文件内容");
+    if (importType === "csv") {
+      importCsvFileInput.value = "";
+    } else {
+      importJsonFileInput.value = "";
+    }
   });
 
   reader.readAsText(file);
@@ -516,10 +773,17 @@ function renderProjects(filter = activeFilter) {
   }).join("");
 }
 
-exportProjectsButton.addEventListener("click", exportProjects);
+exportCsvButton.addEventListener("click", exportCsvProjects);
+exportWordButton.addEventListener("click", exportWordProjects);
+exportPdfButton.addEventListener("click", exportPdfProjects);
+exportJsonButton.addEventListener("click", exportJsonProjects);
 
-importProjectsFileInput.addEventListener("change", (event) => {
-  importProjects(event.target.files?.[0]);
+importCsvFileInput.addEventListener("change", (event) => {
+  importProjects(event.target.files?.[0], "csv");
+});
+
+importJsonFileInput.addEventListener("change", (event) => {
+  importProjects(event.target.files?.[0], "json");
 });
 
 filterButtons.forEach((button) => {

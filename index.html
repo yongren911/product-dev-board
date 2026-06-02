@@ -33,13 +33,6 @@
               <span id="completion-bar" style="--completion: 0%"></span>
             </div>
           </div>
-          <div class="data-transfer-actions" aria-label="项目数据导出和导入">
-            <button id="export-projects" class="data-transfer-button export-button" type="button">导出数据</button>
-            <label class="data-transfer-button import-button" for="import-projects-file">
-              导入数据
-              <input id="import-projects-file" type="file" accept="application/json,.json" />
-            </label>
-          </div>
         </div>
       </div>
       <div class="overview-grid">
@@ -69,6 +62,32 @@
         </article>
       </div>
     </section>
+
+    <section class="data-management-panel" aria-labelledby="data-management-title">
+      <div class="section-heading data-management-heading">
+        <div>
+          <p class="eyebrow">Data Management</p>
+          <h2 id="data-management-title">数据管理</h2>
+        </div>
+        <p class="data-management-tip">建议使用 CSV 或 JSON 进行数据导入；PDF 和 Word 适合导出汇报，不建议用于导入。</p>
+      </div>
+      <div class="data-transfer-actions" aria-label="项目数据导出和导入">
+        <button id="export-csv" class="data-transfer-button export-button" type="button">导出表格 CSV</button>
+        <button id="export-word" class="data-transfer-button" type="button">导出 Word 文档</button>
+        <button id="export-pdf" class="data-transfer-button" type="button">导出 PDF / 打印</button>
+        <button id="export-json" class="data-transfer-button" type="button">导出 JSON 备份</button>
+        <label class="data-transfer-button import-button" for="import-csv-file">
+          导入表格 CSV
+          <input id="import-csv-file" type="file" accept=".csv,text/csv" />
+        </label>
+        <label class="data-transfer-button import-button" for="import-json-file">
+          导入 JSON 备份
+          <input id="import-json-file" type="file" accept="application/json,.json" />
+        </label>
+      </div>
+    </section>
+
+    <section id="print-report" class="print-report" aria-labelledby="print-report-title"></section>
 
     <section class="add-project-panel" aria-labelledby="add-project-title">
       <form id="add-project-form" class="add-project-form">
