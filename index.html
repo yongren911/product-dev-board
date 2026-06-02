@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>产品开发进度看板</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Sports Protection · Product Pipeline</p>
+        <h1 id="page-title">产品开发进度看板</h1>
+        <p class="hero-copy">聚焦运动护具项目状态、优先级与下一步行动，帮助产品设计师快速同步开发节奏。</p>
+      </div>
+      <div class="hero-metric" aria-label="当前项目数量">
+        <span id="visible-count">4</span>
+        <small>进行中项目</small>
+      </div>
+    </section>
+
+    <section class="toolbar" aria-label="按优先级筛选项目">
+      <button class="filter-button active" type="button" data-filter="全部">全部</button>
+      <button class="filter-button" type="button" data-filter="S类">S类</button>
+      <button class="filter-button" type="button" data-filter="A类">A类</button>
+      <button class="filter-button" type="button" data-filter="B类">B类</button>
+    </section>
+
+    <section id="project-grid" class="project-grid" aria-live="polite"></section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
