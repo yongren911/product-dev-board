@@ -4,6 +4,7 @@ const PRIORITY_OPTIONS = ["S类", "A类", "B类", "C类"];
 const PROJECT_STATUS_OPTIONS = ["未开始", "进行中", "待确认", "已完成"];
 const CSV_FILE_NAME = "product-projects.csv";
 const WORD_FILE_NAME = "product-projects-report.doc";
+const WEEKLY_REPORT_WORD_FILE_NAME = "product-weekly-report.doc";
 const CSV_HEADERS = ["项目名称", "优先级", "当前状态", "项目状态", "截止时间", "下一步任务"];
 const CSV_HEADER_TO_PROJECT_KEY = {
   "项目名称": "name",
@@ -90,6 +91,8 @@ const generateWeeklyReportButton = document.querySelector("#generate-weekly-repo
 const weeklyReportPanel = document.querySelector("#weekly-report-panel");
 const weeklyReportText = document.querySelector("#weekly-report-text");
 const copyWeeklyReportButton = document.querySelector("#copy-weekly-report");
+const exportWeeklyReportWordButton = document.querySelector("#export-weekly-report-word");
+const exportWeeklyReportPdfButton = document.querySelector("#export-weekly-report-pdf");
 const closeWeeklyReportButton = document.querySelector("#close-weekly-report");
 const weeklyReportCopyStatus = document.querySelector("#weekly-report-copy-status");
 const printReport = document.querySelector("#print-report");
@@ -98,6 +101,7 @@ let activeFilter = "全部";
 let searchKeyword = "";
 let projects = loadProjects();
 let isOverviewCollapsed = false;
+let weeklyReportGeneratedTime = "";
 
 function getPriorityClass(priority) {
   return priority.replace("类", "").toLowerCase();
@@ -421,7 +425,7 @@ function getRiskLine(project, index, label, today) {
   return `${index + 1}. 【${label}】${project.name}（${project.priority} / ${project.projectStatus}）：${project.currentStatus}；下一步：${project.nextTask}；截止时间：${getDeadlineText(project.deadline)}${timingText}`;
 }
 
-function buildWeeklyReportText() {
+function buildWeeklyReportText(generatedTime = getFormattedExportTime()) {
   const today = getTodayDateOnly();
   const keyProjects = projects.filter((project) => ["S类", "A类"].includes(project.priority));
   const normalProjects = projects.filter((project) => ["B类", "C类"].includes(project.priority));
@@ -438,7 +442,7 @@ function buildWeeklyReportText() {
 
   // 周报完全基于当前 projects 数组生成；新增、编辑、删除或导入后再次点击会读取最新数据。
   return `【本周产品开发进度周报】
-生成时间：${getFormattedExportTime()}
+生成时间：${generatedTime}
 
 一、重点项目进展
 ${getWeeklyReportSection(keyProjects, getWeeklyReportProjectLine, "暂无 S类 或 A类 项目。")}
@@ -457,7 +461,8 @@ ${getWeeklyReportSection(nextWeekTasks, (project, index) => `${index + 1}. ${pro
 }
 
 function renderWeeklyReport() {
-  weeklyReportText.value = buildWeeklyReportText();
+  weeklyReportGeneratedTime = getFormattedExportTime();
+  weeklyReportText.value = buildWeeklyReportText(weeklyReportGeneratedTime);
   weeklyReportPanel.hidden = false;
   weeklyReportCopyStatus.textContent = "";
   weeklyReportPanel.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -465,18 +470,79 @@ function renderWeeklyReport() {
 }
 
 function closeWeeklyReport() {
-  // 关闭后只隐藏周报内容，保留已生成文本，便于再次生成时覆盖并重新显示。
+  // 关闭后隐藏整个内容面板，因此周报正文和复制/导出/关闭按钮会一起消失。
   weeklyReportPanel.hidden = true;
   weeklyReportCopyStatus.textContent = "";
 }
 
-async function copyWeeklyReport() {
+
+function ensureWeeklyReportText() {
   if (!weeklyReportText.value) {
     renderWeeklyReport();
   }
 
+  return weeklyReportText.value;
+}
+
+function getWeeklyReportGeneratedTime() {
+  return weeklyReportGeneratedTime || getFormattedExportTime();
+}
+
+function getWeeklyReportBodyHtml(reportText) {
+  // 周报正文来自 textarea，先转义再保留换行，避免导出文档出现 HTML 注入或排版丢失。
+  return escapeHTML(reportText).replace(/\n/g, "<br />");
+}
+
+function exportWeeklyReportWord() {
+  const reportText = ensureWeeklyReportText();
+  const html = `
+    <!DOCTYPE html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="UTF-8" />
+      <title>产品开发周报</title>
+      <style>
+        body { max-width: 760px; margin: 36px auto; color: #1f2937; font-family: "Microsoft YaHei", Arial, sans-serif; line-height: 1.72; }
+        h1 { margin: 0 0 8px; color: #111827; font-size: 28px; letter-spacing: -0.02em; }
+        .meta { margin: 0 0 22px; color: #6b7280; font-size: 13px; }
+        .weekly-report-body { padding: 22px 24px; border: 1px solid #d1d5db; border-radius: 12px; background: #f9fafb; font-size: 15px; }
+      </style>
+    </head>
+    <body>
+      <h1>产品开发周报</h1>
+      <p class="meta">生成时间：${escapeHTML(getWeeklyReportGeneratedTime())}</p>
+      <div class="weekly-report-body">${getWeeklyReportBodyHtml(reportText)}</div>
+    </body>
+    </html>
+  `;
+
+  // 使用 HTML Blob 生成 .doc，Word/WPS 可直接打开，避免引入额外导出框架。
+  downloadBlob(["\uFEFF", html], WEEKLY_REPORT_WORD_FILE_NAME, "application/msword;charset=utf-8");
+}
+
+function renderWeeklyPrintReport() {
+  const reportText = ensureWeeklyReportText();
+
+  // PDF 导出复用浏览器打印：只向 print-report 写入周报内容，打印样式会隐藏页面其它区域。
+  printReport.innerHTML = `
+    <article class="weekly-print-report" aria-labelledby="print-report-title">
+      <h1 id="print-report-title">产品开发周报</h1>
+      <p class="print-export-time">生成时间：${escapeHTML(getWeeklyReportGeneratedTime())}</p>
+      <div class="weekly-print-body">${getWeeklyReportBodyHtml(reportText)}</div>
+    </article>
+  `;
+}
+
+function exportWeeklyReportPdf() {
+  renderWeeklyPrintReport();
+  window.print();
+}
+
+async function copyWeeklyReport() {
+  const reportText = ensureWeeklyReportText();
+
   try {
-    await navigator.clipboard.writeText(weeklyReportText.value);
+    await navigator.clipboard.writeText(reportText);
   } catch (error) {
     // Clipboard API 不可用时使用 textarea 选中复制，保证老浏览器也能一键复制。
     weeklyReportText.select();
@@ -879,6 +945,8 @@ exportPdfButton.addEventListener("click", exportPdfProjects);
 toggleOverviewButton.addEventListener("click", toggleOverviewCollapse);
 generateWeeklyReportButton.addEventListener("click", renderWeeklyReport);
 copyWeeklyReportButton.addEventListener("click", copyWeeklyReport);
+exportWeeklyReportWordButton.addEventListener("click", exportWeeklyReportWord);
+exportWeeklyReportPdfButton.addEventListener("click", exportWeeklyReportPdf);
 closeWeeklyReportButton.addEventListener("click", closeWeeklyReport);
 
 importCsvFileInput.addEventListener("change", (event) => {
