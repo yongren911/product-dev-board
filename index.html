@@ -20,6 +20,36 @@
       </div>
     </section>
 
+    <section class="add-project-panel" aria-labelledby="add-project-title">
+      <div class="section-heading">
+        <p class="eyebrow">New Sprint Entry</p>
+        <h2 id="add-project-title">新增项目</h2>
+      </div>
+      <form id="add-project-form" class="add-project-form">
+        <label class="form-field">
+          <span>项目名称</span>
+          <input id="project-name" name="name" type="text" placeholder="例如：轻量竞速护踝" required />
+        </label>
+        <label class="form-field">
+          <span>优先级</span>
+          <select id="project-priority" name="priority" required>
+            <option value="S类">S类</option>
+            <option value="A类">A类</option>
+            <option value="B类">B类</option>
+          </select>
+        </label>
+        <label class="form-field">
+          <span>当前状态</span>
+          <input id="project-status" name="status" type="text" placeholder="例如：结构方案评审中" required />
+        </label>
+        <label class="form-field">
+          <span>下一步任务</span>
+          <input id="project-next-step" name="nextStep" type="text" placeholder="例如：确认材料与打样节点" required />
+        </label>
+        <button class="add-button" type="submit">添加项目</button>
+      </form>
+    </section>
+
     <section class="toolbar" aria-label="按优先级筛选项目">
       <button class="filter-button active" type="button" data-filter="全部">全部</button>
       <button class="filter-button" type="button" data-filter="S类">S类</button>
