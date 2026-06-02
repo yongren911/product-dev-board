@@ -1,5 +1,6 @@
 const STORAGE_KEY = "product-dev-board-projects";
 const PRIORITY_OPTIONS = ["S类", "A类", "B类", "C类"];
+const PROJECT_STATUS_OPTIONS = ["未开始", "进行中", "待确认", "已完成"];
 
 // 默认项目数据：localStorage 没有数据时使用
 const defaultProjects = [
@@ -7,30 +8,40 @@ const defaultProjects = [
     name: "BSR 空气甲护膝 26款",
     priority: "S类",
     status: "生产文档整理中",
+    projectStatus: "进行中",
+    deadline: "2026-06-10",
     nextStep: "确认最终生产资料",
   },
   {
     name: "深护 TFCC 护腕超薄款",
     priority: "A类",
     status: "推进 BOM 和打样图稿",
+    projectStatus: "进行中",
+    deadline: "2026-06-15",
     nextStep: "完善结构细节",
   },
   {
     name: "7D 签名护膝",
     priority: "B类",
     status: "等待配色方案",
+    projectStatus: "待确认",
+    deadline: "2026-06-20",
     nextStep: "同步 Logo 方案",
   },
   {
     name: "签名版 Pro 单髌骨带",
     priority: "A类",
     status: "等待样品确认",
+    projectStatus: "待确认",
+    deadline: "2026-06-18",
     nextStep: "确认样品外观",
   },
   {
     name: "SE-S 支撑护膝",
     priority: "C类",
     status: "样品待确认",
+    projectStatus: "未开始",
+    deadline: "",
     nextStep: "记录测试反馈",
   },
 ];
@@ -40,15 +51,30 @@ const filterButtons = document.querySelectorAll(".filter-button");
 const visibleCount = document.querySelector("#visible-count");
 const addProjectForm = document.querySelector("#add-project-form");
 const resetProjectsButton = document.querySelector("#reset-projects");
+const projectSearchInput = document.querySelector("#project-search");
 const editProjectDialog = document.querySelector("#edit-project-dialog");
 const editProjectForm = document.querySelector("#edit-project-form");
 const editCancelButtons = document.querySelectorAll("[data-edit-cancel]");
 
 let activeFilter = "全部";
+let searchKeyword = "";
 let projects = loadProjects();
 
 function getPriorityClass(priority) {
   return priority.replace("类", "").toLowerCase();
+}
+
+function getProjectStatusClass(projectStatus) {
+  return {
+    "未开始": "not-started",
+    "进行中": "in-progress",
+    "待确认": "pending",
+    "已完成": "done",
+  }[projectStatus] || "not-started";
+}
+
+function getDeadlineText(deadline) {
+  return deadline || "未设置";
 }
 
 function getPriorityProgress(priority) {
@@ -80,12 +106,33 @@ function createDefaultProjects() {
   return defaultProjects.map((project) => ({ ...project }));
 }
 
+function normalizeProject(project) {
+  if (!project
+    || typeof project.name !== "string"
+    || !PRIORITY_OPTIONS.includes(project.priority)
+    || typeof project.status !== "string"
+    || typeof project.nextStep !== "string") {
+    return null;
+  }
+
+  // 兼容旧版 localStorage：没有项目状态或截止时间时补默认值
+  const projectStatus = PROJECT_STATUS_OPTIONS.includes(project.projectStatus)
+    ? project.projectStatus
+    : "进行中";
+  const deadline = typeof project.deadline === "string" ? project.deadline : "";
+
+  return {
+    name: project.name,
+    priority: project.priority,
+    status: project.status,
+    projectStatus,
+    deadline,
+    nextStep: project.nextStep,
+  };
+}
+
 function isValidProject(project) {
-  return project
-    && typeof project.name === "string"
-    && PRIORITY_OPTIONS.includes(project.priority)
-    && typeof project.status === "string"
-    && typeof project.nextStep === "string";
+  return Boolean(normalizeProject(project));
 }
 
 function loadProjects() {
@@ -99,7 +146,7 @@ function loadProjects() {
     const parsedProjects = JSON.parse(savedProjects);
 
     if (Array.isArray(parsedProjects)) {
-      return parsedProjects.filter(isValidProject);
+      return parsedProjects.map(normalizeProject).filter(Boolean);
     }
   } catch (error) {
     console.warn("读取项目数据失败，已恢复默认项目。", error);
@@ -129,6 +176,18 @@ function closeEditDialog() {
   }
 }
 
+function isProjectMatchedBySearch(project) {
+  if (!searchKeyword) {
+    return true;
+  }
+
+  const normalizedKeyword = searchKeyword.toLowerCase();
+
+  // 搜索同时覆盖项目名称、当前状态、项目状态和下一步任务
+  return [project.name, project.status, project.projectStatus, project.nextStep]
+    .some((value) => value.toLowerCase().includes(normalizedKeyword));
+}
+
 function openEditDialog(projectIndex) {
   const project = projects[projectIndex];
 
@@ -141,6 +200,8 @@ function openEditDialog(projectIndex) {
   editProjectForm.elements.name.value = project.name;
   editProjectForm.elements.priority.value = project.priority;
   editProjectForm.elements.status.value = project.status;
+  editProjectForm.elements.projectStatus.value = project.projectStatus;
+  editProjectForm.elements.deadline.value = project.deadline;
   editProjectForm.elements.nextStep.value = project.nextStep;
 
   if (typeof editProjectDialog.showModal === "function") {
@@ -150,22 +211,24 @@ function openEditDialog(projectIndex) {
   }
 }
 
-// 根据筛选条件渲染项目卡片
+// 根据优先级筛选和搜索关键词共同渲染项目卡片
 function renderProjects(filter = activeFilter) {
-  const visibleProjects = filter === "全部"
-    ? projects
-    : projects.filter((project) => project.priority === filter);
+  const visibleProjects = projects.filter((project) => {
+    const isMatchedByFilter = filter === "全部" || project.priority === filter;
+    return isMatchedByFilter && isProjectMatchedBySearch(project);
+  });
 
   visibleCount.textContent = visibleProjects.length;
 
   if (visibleProjects.length === 0) {
-    projectGrid.innerHTML = '<p class="empty-state">暂无符合该优先级的项目</p>';
+    projectGrid.innerHTML = '<p class="empty-state">暂无符合当前筛选或搜索条件的项目</p>';
     return;
   }
 
   projectGrid.innerHTML = visibleProjects.map((project) => {
     const originalIndex = projects.indexOf(project);
     const priorityClass = getPriorityClass(project.priority);
+    const projectStatusClass = getProjectStatusClass(project.projectStatus);
 
     return `
       <article class="project-card priority-${priorityClass}" data-project-index="${originalIndex}">
@@ -175,7 +238,10 @@ function renderProjects(filter = activeFilter) {
             <h2>${escapeHTML(project.name)}</h2>
           </div>
           <div class="card-actions">
-            <span class="priority-badge ${priorityClass}">${project.priority}</span>
+            <div class="badge-stack">
+              <span class="priority-badge ${priorityClass}">${project.priority}</span>
+              <span class="status-badge ${projectStatusClass}">${escapeHTML(project.projectStatus)}</span>
+            </div>
             <div class="card-action-buttons">
               <button class="edit-button" type="button" data-edit-index="${originalIndex}" aria-label="编辑 ${escapeHTML(project.name)}">编辑</button>
               <button class="delete-button" type="button" data-delete-index="${originalIndex}" aria-label="删除 ${escapeHTML(project.name)}">删除</button>
@@ -186,6 +252,10 @@ function renderProjects(filter = activeFilter) {
           <div class="detail-item">
             <span class="detail-label">当前状态</span>
             <p class="detail-value">${escapeHTML(project.status)}</p>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">截止时间</span>
+            <p class="detail-value deadline-value">${escapeHTML(getDeadlineText(project.deadline))}</p>
           </div>
           <div class="detail-item">
             <span class="detail-label">下一步任务</span>
@@ -208,6 +278,12 @@ filterButtons.forEach((button) => {
   });
 });
 
+projectSearchInput.addEventListener("input", () => {
+  // 搜索关键词与优先级筛选叠加生效
+  searchKeyword = projectSearchInput.value.trim();
+  renderProjects();
+});
+
 addProjectForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
@@ -216,10 +292,16 @@ addProjectForm.addEventListener("submit", (event) => {
     name: getTrimmedValue(formData, "name"),
     priority: getTrimmedValue(formData, "priority"),
     status: getTrimmedValue(formData, "status"),
+    projectStatus: getTrimmedValue(formData, "projectStatus"),
+    deadline: getTrimmedValue(formData, "deadline"),
     nextStep: getTrimmedValue(formData, "nextStep"),
   };
 
-  if (!newProject.name || !newProject.priority || !newProject.status || !newProject.nextStep) {
+  if (!newProject.name
+    || !PRIORITY_OPTIONS.includes(newProject.priority)
+    || !newProject.status
+    || !PROJECT_STATUS_OPTIONS.includes(newProject.projectStatus)
+    || !newProject.nextStep) {
     return;
   }
 
@@ -271,12 +353,15 @@ editProjectForm.addEventListener("submit", (event) => {
     name: getTrimmedValue(formData, "name"),
     priority: getTrimmedValue(formData, "priority"),
     status: getTrimmedValue(formData, "status"),
+    projectStatus: getTrimmedValue(formData, "projectStatus"),
+    deadline: getTrimmedValue(formData, "deadline"),
     nextStep: getTrimmedValue(formData, "nextStep"),
   };
 
   if (!updatedProject.name
     || !PRIORITY_OPTIONS.includes(updatedProject.priority)
     || !updatedProject.status
+    || !PROJECT_STATUS_OPTIONS.includes(updatedProject.projectStatus)
     || !updatedProject.nextStep) {
     return;
   }
@@ -307,6 +392,8 @@ resetProjectsButton.addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
   projects = createDefaultProjects();
   setActiveFilter("全部");
+  searchKeyword = "";
+  projectSearchInput.value = "";
   renderProjects();
 });
 
