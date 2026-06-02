@@ -37,6 +37,17 @@ function getPriorityClass(priority) {
   return priority.replace("类", "").toLowerCase();
 }
 
+
+function getPriorityProgress(priority) {
+  const priorityProgress = {
+    "S类": "82%",
+    "A类": "64%",
+    "B类": "46%",
+  };
+
+  return priorityProgress[priority] || "56%";
+}
+
 function escapeHTML(value) {
   return value.replace(/[&<>'"]/g, (character) => ({
     "&": "&amp;",
@@ -73,20 +84,27 @@ function renderProjects(filter = activeFilter) {
   }
 
   projectGrid.innerHTML = visibleProjects.map((project) => `
-    <article class="project-card">
+    <article class="project-card priority-${getPriorityClass(project.priority)}">
       <div class="card-top">
-        <h2>${escapeHTML(project.name)}</h2>
+        <div class="card-title-group">
+          <span class="project-code">Dev Sprint / ${getPriorityClass(project.priority).toUpperCase()}-Guard</span>
+          <h2>${escapeHTML(project.name)}</h2>
+        </div>
         <span class="priority-badge ${getPriorityClass(project.priority)}">${project.priority}</span>
       </div>
       <div class="card-detail">
-        <div>
+        <div class="detail-item">
           <span class="detail-label">当前状态</span>
           <p class="detail-value">${escapeHTML(project.status)}</p>
         </div>
-        <div>
+        <div class="detail-item">
           <span class="detail-label">下一步任务</span>
           <p class="detail-value">${escapeHTML(project.nextStep)}</p>
         </div>
+      </div>
+      <div class="card-footer" aria-hidden="true">
+        <span>Impact Readiness</span>
+        <div class="progress-track"><span style="--progress: ${getPriorityProgress(project.priority)}"></span></div>
       </div>
     </article>
   `).join("");
